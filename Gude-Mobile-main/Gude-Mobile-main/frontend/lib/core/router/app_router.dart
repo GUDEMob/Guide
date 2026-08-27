@@ -248,7 +248,7 @@ class AppRouter {
         routes: [
           GoRoute(
               path: '/buyer/marketplace',
-              builder: (c, s) => const MarketplacePage()),
+              builder: (c, s) => const MarketplacePage(isBuyer: true)),
           GoRoute(
               path: '/buyer/messages',
               builder: (c, s) => const BuyerMessagesPage()),

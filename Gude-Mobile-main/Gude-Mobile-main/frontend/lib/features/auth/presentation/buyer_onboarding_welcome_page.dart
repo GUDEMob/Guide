@@ -918,7 +918,7 @@ class _BuyerOnboardingCompletePageState
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        onPressed: () => context.go('/marketplace'),
+                        onPressed: () => context.go('/buyer/marketplace'),
                         child: const Text(
                           'Explore Marketplace',
                           style: TextStyle(
@@ -940,9 +940,9 @@ class _BuyerOnboardingCompletePageState
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        onPressed: () => context.go('/home'),
+                        onPressed: () => context.go('/buyer/profile'),
                         child: const Text(
-                          'Go to Home',
+                          'View Buyer Profile',
                           style: TextStyle(
                               fontSize: 15, fontWeight: FontWeight.w600),
                         ),

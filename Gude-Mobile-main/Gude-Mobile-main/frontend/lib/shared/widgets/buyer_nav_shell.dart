@@ -9,7 +9,7 @@ class BuyerNavShell extends StatelessWidget {
   const BuyerNavShell({super.key, required this.child});
 
   static const _tabs = [
-    _Tab(path: '/buyer/marketplace', icon: Icons.storefront_outlined,     activeIcon: Icons.storefront_rounded,       label: 'Marketplace'),
+    _Tab(path: '/buyer/marketplace', icon: Icons.storefront_outlined,     activeIcon: Icons.storefront_rounded,       label: 'Discover'),
     _Tab(path: '/buyer/messages',    icon: Icons.chat_bubble_outline,      activeIcon: Icons.chat_bubble_rounded,      label: 'Messages'),
     _Tab(path: '/buyer/profile',     icon: Icons.person_outline_rounded,   activeIcon: Icons.person_rounded,           label: 'Profile'),
   ];

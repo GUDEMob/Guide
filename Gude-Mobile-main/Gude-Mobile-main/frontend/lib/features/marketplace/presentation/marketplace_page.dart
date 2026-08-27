@@ -218,8 +218,48 @@ class _Wishlist {
 // ════════════════════════════════════════════════════════════════
 //  Marketplace Landing
 // ════════════════════════════════════════════════════════════════
+class _BuyerShortcut extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _BuyerShortcut({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.09),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withOpacity(0.20)),
+        ),
+        child: Column(children: [
+          Icon(icon, color: color, size: 21),
+          const SizedBox(height: 5),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: _C.dark)),
+        ]),
+      ),
+    );
+  }
+}
+
 class MarketplacePage extends StatefulWidget {
-  const MarketplacePage({super.key});
+  final bool isBuyer;
+  const MarketplacePage({super.key, this.isBuyer = false});
   @override
   State<MarketplacePage> createState() => _MarketplacePageState();
 }
@@ -266,10 +306,11 @@ class _MarketplacePageState extends State<MarketplacePage> {
           // ── App bar ─────────────────────────────────────
           SliverAppBar(
             pinned: true,
-            backgroundColor: _C.primary,
+            backgroundColor:
+                widget.isBuyer ? const Color(0xFF1A3A8F) : _C.primary,
             elevation: 0,
-            title: const Text('Market',
-                style: TextStyle(
+            title: Text(widget.isBuyer ? 'Discover' : 'Market',
+                style: const TextStyle(
                     color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20)),
             actions: [
               Stack(
@@ -315,15 +356,17 @@ class _MarketplacePageState extends State<MarketplacePage> {
                   margin: const EdgeInsets.all(16),
                   height: 72,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                        colors: [Color(0xFFE30613), Color(0xFF7C4DFF)],
+                    gradient: LinearGradient(
+                        colors: widget.isBuyer
+                            ? const [Color(0xFF1A3A8F), Color(0xFF2D5BE3)]
+                            : const [Color(0xFFE30613), Color(0xFF7C4DFF)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(children: [
-                    const Padding(
-                      padding: EdgeInsets.all(16),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -331,8 +374,11 @@ class _MarketplacePageState extends State<MarketplacePage> {
                           Text('🛒 Student Deals',
                               style: TextStyle(
                                   color: Colors.white54, fontSize: 11)),
-                          Text('Buy less. Earn more.',
-                              style: TextStyle(
+                          Text(
+                              widget.isBuyer
+                                  ? 'Find talent. Get it done.'
+                                  : 'Buy less. Earn more.',
+                              style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w900,
@@ -365,6 +411,40 @@ class _MarketplacePageState extends State<MarketplacePage> {
                 ),
 
                 // ── SPLIT listing buttons ───────────────────
+                if (widget.isBuyer)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: Row(children: [
+                      Expanded(
+                        child: _BuyerShortcut(
+                          icon: Icons.favorite_outline_rounded,
+                          label: 'Saved',
+                          color: const Color(0xFFEF476F),
+                          onTap: () => context.push('/wishlist'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _BuyerShortcut(
+                          icon: Icons.receipt_long_outlined,
+                          label: 'Orders',
+                          color: const Color(0xFFF59E0B),
+                          onTap: () => context.go('/buyer/profile'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _BuyerShortcut(
+                          icon: Icons.chat_bubble_outline_rounded,
+                          label: 'Messages',
+                          color: const Color(0xFF1A3A8F),
+                          onTap: () => context.go('/buyer/messages'),
+                        ),
+                      ),
+                    ]),
+                  ),
+
+                if (!widget.isBuyer)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   child: Row(
