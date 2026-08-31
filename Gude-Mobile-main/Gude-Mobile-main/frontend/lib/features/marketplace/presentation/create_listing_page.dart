@@ -4,7 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:gude_app/core/theme/app_theme.dart';
 
 class CreateListingPage extends StatefulWidget {
-  const CreateListingPage({super.key});
+  final int initialTab;
+  const CreateListingPage({super.key, this.initialTab = 0});
   @override
   State<CreateListingPage> createState() => _CreateListingPageState();
 }
@@ -16,7 +17,8 @@ class _CreateListingPageState extends State<CreateListingPage>
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 2, vsync: this);
+    _tabCtrl = TabController(
+        length: 2, vsync: this, initialIndex: widget.initialTab == 1 ? 1 : 0);
   }
 
   @override

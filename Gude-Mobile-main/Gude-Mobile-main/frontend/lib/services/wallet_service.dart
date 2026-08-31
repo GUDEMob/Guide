@@ -36,6 +36,25 @@ class WalletService extends ChangeNotifier {
 
   bool _initialised = false;
   double initialMainAccountBalance = 0.0;
+  double _gudeEarningsBalance = 0.0;
+  int _gudePoints = 250;
+
+  /// Marketplace earnings are kept separate from personal wallet money.
+  double get gudeEarningsBalance => _gudeEarningsBalance;
+  int get gudePoints => _gudePoints;
+
+  void recordGudeEarning(double amount, String source) {
+    if (amount <= 0) return;
+    _gudeEarningsBalance += amount;
+    _gudePoints += 20;
+    notifyListeners();
+  }
+
+  void awardGudePoints(int points, String reason) {
+    if (points <= 0) return;
+    _gudePoints += points;
+    notifyListeners();
+  }
 
   // ── Main Account pocket ID ────────────────────────────────
   static const _mainPocketId = 'main_account';
@@ -91,6 +110,32 @@ class WalletService extends ChangeNotifier {
             : [],
       ),
     );
+
+    // Ready-made, zero-balance pockets demonstrate the flexible wallet
+    // without moving any of the student's real available balance.
+    _pockets.addAll([
+      Pocket(
+        id: 'savings_pocket',
+        name: 'Savings',
+        emoji: '\u{1F4B0}',
+        color: const Color(0xFF10B981),
+        balance: 0,
+      ),
+      Pocket(
+        id: 'budget_pocket',
+        name: 'Monthly Budget',
+        emoji: '\u{1F4CA}',
+        color: const Color(0xFF7C3AED),
+        balance: 0,
+      ),
+      Pocket(
+        id: 'allowance_pocket',
+        name: 'Allowance',
+        emoji: '\u{1F392}',
+        color: const Color(0xFFF59E0B),
+        balance: 0,
+      ),
+    ]);
 
     initialMainAccountBalance =
         income; // ← set directly from income, not balance

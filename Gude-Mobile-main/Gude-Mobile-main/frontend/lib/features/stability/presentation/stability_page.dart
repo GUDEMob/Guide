@@ -347,7 +347,7 @@ class _StabilityPageState extends State<StabilityPage>
   void _showScoreExplanationDialog() {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('How your score is calculated',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
@@ -357,7 +357,7 @@ class _StabilityPageState extends State<StabilityPage>
                     fontSize: 13, height: 1.6, color: Color(0xFF444444)))),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: const Text('Got it',
                   style: TextStyle(
                       color: _C.primary, fontWeight: FontWeight.w700)))

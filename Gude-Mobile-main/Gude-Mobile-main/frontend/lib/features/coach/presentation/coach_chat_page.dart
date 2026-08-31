@@ -27,14 +27,22 @@ class _Msg {
 
 // ── Suggested prompts ────────────────────────────────────────
 const _suggestions = [
-  ('Can I afford takeout?', '🍔'),
+  ('How does Gude work?', 'G'),
+  ('Help me sell a product', '📦'),
+  ('Help me list a service', '🛠️'),
+  ('What can I buy on Market?', '🛍️'),
+  ('How do I price my skills?', '💼'),
   ('Help me save R500', '💰'),
+  ('Build my student budget', '📊'),
   ('Survive till month-end', '📅'),
+  ('Explain my Gude Wallet', '👛'),
+  ('Find support for me', '❤️'),
+  ('I need affordable food', '🥗'),
+  ('I feel financially stressed', '🌱'),
   ('NSFAS delay survival plan', '⏳'),
-  ('R0 to R500 savings challenge', '🚀'),
-  ('How do I reduce transport cost?', '🚌'),
-  ('Am I overspending?', '📊'),
-  ('Set a new savings goal', '🎯'),
+  ('Give me a side-hustle idea', '🚀'),
+  ('Set a savings goal', '🎯'),
+  ('How can Gude keep me safe?', '🛡️'),
 ];
 
 // ════════════════════════════════════════════════════════════
@@ -49,14 +57,15 @@ class CoachChatPage extends StatefulWidget {
 class _CoachChatPageState extends State<CoachChatPage> {
   final _inputCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
+  final _promptScrollCtrl = ScrollController();
   bool _isTyping = false;
 
   final List<Map<String, String>> _history = [];
 
   final List<_Msg> _messages = [
     _Msg(
-      text: '👋 Hey! I\'m AI Buddy, your personal financial coach.\n\n'
-          'Ask me anything about budgeting, saving, earning, or student life in SA!',
+      text: 'Hi! I\'m Ask Gude — your guide to everything in the app.\n\n'
+          'I can help you buy or sell on Market, create listings, use your Wallet, build a budget, save money, find support, and navigate student life. Choose a prompt below or ask me anything!',
       isAi: true,
       time: DateTime.now(),
     ),
@@ -73,7 +82,16 @@ class _CoachChatPageState extends State<CoachChatPage> {
   void dispose() {
     _inputCtrl.dispose();
     _scrollCtrl.dispose();
+    _promptScrollCtrl.dispose();
     super.dispose();
+  }
+
+  void _showNextPrompts() {
+    if (!_promptScrollCtrl.hasClients) return;
+    final next = (_promptScrollCtrl.offset + 230).clamp(
+        0.0, _promptScrollCtrl.position.maxScrollExtent).toDouble();
+    _promptScrollCtrl.animateTo(next,
+        duration: const Duration(milliseconds: 320), curve: Curves.easeOutCubic);
   }
 
   // ── Load saved chat history ──────────────────────────────
@@ -175,6 +193,20 @@ YOUR EXPERTISE COVERS:
     - Starting to invest: Easy Equities, unit trusts for beginners
     - Graduate financial planning: first salary budgeting
 
+11. GUDE APP & MARKETPLACE GUIDE
+    - Explain the Home, Market, Wallet, and Support Hub tabs
+    - Help students switch between Buy and Sell mode in Market
+    - Guide product listings: photos, condition, fair pricing, location, and safety
+    - Guide service listings: skills, packages, turnaround time, portfolio, and rates
+    - Help buyers search, compare, save favourites, message sellers, and checkout
+    - Explain Gude Wallet pockets, budgets, savings goals, and transactions
+    - Direct students to Quick Income, Budget Help, Food Support, Peer Tutoring,
+      counselling, mentorship, and the weekly wellbeing check-in
+    - Promote safe trading: use in-app messages, confirm details, meet publicly,
+      protect personal information, and report suspicious behaviour
+
+When explaining navigation, use the exact tab and button names shown in Gude.
+
 RESPONSE RULES:
 - Always use South African Rand (R) for all amounts
 - Be conversational, warm, and encouraging — like a smart older sibling
@@ -204,7 +236,7 @@ RESPONSE RULES:
   }
 
   // ── Call Claude via proxy ────────────────────────────────
-  Future<String> _callClaude() async {
+  Future<String> _callClaude(String latestText) async {
     // 🔧 Change this URL depending on your platform:
     //   Android emulator  → http://10.0.2.2:3000/chat
     //   iOS simulator     → http://localhost:3000/chat
@@ -241,14 +273,14 @@ RESPONSE RULES:
               .join('\n')
               .trim();
         }
-        return _fallback();
+        return _offlineAnswer(latestText);
       } else {
         debugPrint('Proxy error ${res.statusCode}: ${res.body}');
-        return _fallback();
+        return _offlineAnswer(latestText);
       }
     } catch (e) {
       debugPrint('_callClaude error: $e');
-      return _fallback();
+      return _offlineAnswer(latestText);
     }
   }
 
@@ -264,7 +296,7 @@ RESPONSE RULES:
     });
     _scrollToBottom();
 
-    final reply = await _callClaude();
+    final reply = await _callClaude(text.trim());
 
     if (!mounted) return;
     setState(() {
@@ -277,8 +309,31 @@ RESPONSE RULES:
     await _saveHistory();
   }
 
-  String _fallback() =>
-      "I'm having trouble connecting right now. Please check your internet connection and try again 🔄";
+  String _offlineAnswer(String prompt) {
+    final q = prompt.toLowerCase();
+    if (q.contains('service')) {
+      return 'To list a service, open Market, switch to Sell, then tap the blue tools icon. Add a clear title, what is included, turnaround time, price, availability, and examples of your work. A useful student starting range is often R80–R250 depending on the skill.';
+    }
+    if (q.contains('product') || q.contains('sell')) {
+      return 'Open Market, switch to Sell, and tap the red product-box icon. Add bright photos, the real condition, a fair price, your location, and whether the price is negotiable. Keep messages in Gude and meet in a busy public place.';
+    }
+    if (q.contains('market') || q.contains('buy')) {
+      return 'Use Market in Buy mode to browse products and student services. Search by name, swipe through categories, save favourites with the heart, compare prices, and open a listing before messaging the seller or adding it to your cart.';
+    }
+    if (q.contains('support') || q.contains('food') || q.contains('stress')) {
+      return 'Open Support Hub for Quick Income, Budget Help, Food Support, Peer Tutoring, counselling, mentorship, and your weekly wellbeing check-in. If money stress feels overwhelming, start with Talk to Someone — asking for support is a strong move.';
+    }
+    if (q.contains('wallet')) {
+      return 'Your Gude Wallet shows your balance, transactions, budgets, savings goals, and spending categories. Use Budget to set limits, Goals to save for something specific, and Transact when you need to move money.';
+    }
+    if (q.contains('save')) {
+      return 'Let’s make saving realistic: choose a target, divide it by the days left, and move that amount first. For R500 in 30 days, save about R17 daily or R125 weekly. Create a Wallet goal and fund it after each allowance or sale.';
+    }
+    if (q.contains('budget') || q.contains('month')) {
+      return 'Start with food, transport, data, and study costs. Subtract those from your monthly income, keep a small emergency buffer, then divide the remainder into a daily limit. Open Wallet → Budget to create category limits you can actually follow.';
+    }
+    return 'I can guide you through Gude Market, buying and selling, product or service listings, Wallet, budgeting, saving, Quick Income, food support, tutoring, counselling, mentorship, and student money decisions. Tell me your goal and I’ll turn it into simple next steps.';
+  }
 
   // ── Build ────────────────────────────────────────────────
   @override
@@ -308,12 +363,12 @@ RESPONSE RULES:
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('AI Buddy',
+              Text('Ask Gude',
                   style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
                       color: _C.dark)),
-              Text('Your financial coach • Always on',
+              Text('Market, money and student support',
                   style: TextStyle(fontSize: 10, color: _C.grey)),
             ],
           ),
@@ -345,6 +400,8 @@ RESPONSE RULES:
       ),
       body: Column(
         children: [
+          if (_messages.length == 1) _AskGudeIntro(onPrompt: _send),
+
           // ── Chat messages ────────────────────────────────
           Expanded(
             child: ListView.builder(
@@ -362,37 +419,68 @@ RESPONSE RULES:
 
           // ── Suggested prompts ────────────────────────────
           Container(
-            height: 40,
+            height: 58,
             color: Colors.white,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              itemCount: _suggestions.length,
-              itemBuilder: (_, i) {
-                final (label, emoji) = _suggestions[i];
-                return GestureDetector(
-                  onTap: () => _send(label),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: _C.lightGrey,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: _C.border),
-                    ),
-                    child: Row(children: [
-                      Text(emoji, style: const TextStyle(fontSize: 13)),
-                      const SizedBox(width: 5),
-                      Text(label,
-                          style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: _C.dark)),
-                    ]),
+            child: Stack(children: [
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Padding(
+                  padding: EdgeInsets.only(left: 14, top: 2),
+                  child: Text('Swipe for more ideas',
+                      style: TextStyle(fontSize: 9, color: _C.grey)),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    controller: _promptScrollCtrl,
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(12, 4, 54, 6),
+                    itemCount: _suggestions.length,
+                    itemBuilder: (_, i) {
+                      final (label, emoji) = _suggestions[i];
+                      return GestureDetector(
+                        onTap: () => _send(label),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: _C.lightGrey,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: _C.border),
+                          ),
+                          child: Row(children: [
+                            Text(emoji, style: const TextStyle(fontSize: 13)),
+                            const SizedBox(width: 5),
+                            Text(label,
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: _C.dark)),
+                          ]),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
+                ),
+              ]),
+              Positioned(
+                right: 7,
+                bottom: 7,
+                child: Material(
+                  color: _C.primary,
+                  shape: const CircleBorder(),
+                  elevation: 2,
+                  child: InkWell(
+                    onTap: _showNextPrompts,
+                    customBorder: const CircleBorder(),
+                    child: const Padding(
+                      padding: EdgeInsets.all(7),
+                      child: Icon(Icons.arrow_forward_rounded,
+                          size: 16, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ),
+            ]),
           ),
 
           // ── Input bar ────────────────────────────────────
@@ -421,7 +509,7 @@ RESPONSE RULES:
                     onSubmitted: _send,
                     style: const TextStyle(fontSize: 14, color: _C.dark),
                     decoration: const InputDecoration(
-                      hintText: 'Ask AI Buddy anything...',
+                      hintText: 'Ask Gude anything...',
                       hintStyle: TextStyle(color: _C.grey, fontSize: 13),
                       border: InputBorder.none,
                       contentPadding:
@@ -461,6 +549,85 @@ RESPONSE RULES:
 // ════════════════════════════════════════════════════════════
 //  Chat Bubble
 // ════════════════════════════════════════════════════════════
+class _AskGudeIntro extends StatelessWidget {
+  final ValueChanged<String> onPrompt;
+  const _AskGudeIntro({required this.onPrompt});
+
+  @override
+  Widget build(BuildContext context) {
+    const capabilities = [
+      ('Buy & sell', Icons.storefront_outlined, Color(0xFFE30613),
+          'Show me how to buy and sell on Gude'),
+      ('Money help', Icons.savings_outlined, Color(0xFF10B981),
+          'Help me make a money plan'),
+      ('Find support', Icons.favorite_outline_rounded, Color(0xFFEC4899),
+          'Which Support Hub resource is right for me?'),
+      ('Use Gude', Icons.explore_outlined, Color(0xFF7C4DFF),
+          'Give me a tour of the Gude app'),
+    ];
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFF0F2), Color(0xFFF4EEFF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _C.primary.withOpacity(0.12)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Row(children: [
+          Icon(Icons.waving_hand_rounded, color: _C.amber, size: 19),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text('What can Ask Gude do?',
+                style: TextStyle(
+                    color: _C.dark,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800)),
+          ),
+        ]),
+        const SizedBox(height: 4),
+        const Text('Tap a topic for friendly, step-by-step help.',
+            style: TextStyle(color: _C.grey, fontSize: 11)),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: capabilities.map((item) {
+            final (label, icon, color, prompt) = item;
+            return InkWell(
+              onTap: () => onPrompt(prompt),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withOpacity(0.18)),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(icon, color: color, size: 16),
+                  const SizedBox(width: 6),
+                  Text(label,
+                      style: TextStyle(
+                          color: color,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700)),
+                ]),
+              ),
+            );
+          }).toList(),
+        ),
+      ]),
+    );
+  }
+}
+
 class _ChatBubble extends StatelessWidget {
   final _Msg msg;
   const _ChatBubble({required this.msg});

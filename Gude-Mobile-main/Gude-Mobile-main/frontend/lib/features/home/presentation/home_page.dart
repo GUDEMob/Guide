@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import 'package:gude_app/services/user_role_service.dart';
+import 'package:gude_app/services/wallet_service.dart';
 
 class _ExtraColors {
   static const green = Color(0xFF10B981);
@@ -49,6 +50,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool _balVisible = true;
   final int _streak = 1;
+  late final WalletService _walletService;
 
   // Useful defaults keep the dashboard productive on first launch.
   final List<_QAData> _activeActions = [
@@ -58,9 +60,23 @@ class _HomePageState extends State<HomePage> {
     _allActions[6],
   ];
 
-  double get _balance {
-    final income = UserRoleService().monthlyIncome;
-    return income > 0 ? income : 0.0;
+  double get _balance => _walletService.gudeEarningsBalance;
+
+  @override
+  void initState() {
+    super.initState();
+    _walletService = WalletService()..initFromOnboarding();
+    _walletService.addListener(_refreshWallet);
+  }
+
+  void _refreshWallet() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _walletService.removeListener(_refreshWallet);
+    super.dispose();
   }
 
   int get _daysLeft {
@@ -203,6 +219,7 @@ class _HomePageState extends State<HomePage> {
                 // ── 1. Account card ────────────────────────────
                 _AccountCard(
                   balance: _balance,
+                  points: _walletService.gudePoints,
                   daysLeft: _daysLeft,
                   visible: _balVisible,
                   onToggle: () => setState(() => _balVisible = !_balVisible),
@@ -252,12 +269,14 @@ class _HomePageState extends State<HomePage> {
 // ════════════════════════════════════════════════════════════
 class _AccountCard extends StatelessWidget {
   final double balance;
+  final int points;
   final int daysLeft;
   final bool visible;
   final VoidCallback onToggle, onTap;
 
   const _AccountCard({
     required this.balance,
+    required this.points,
     required this.daysLeft,
     required this.visible,
     required this.onToggle,
@@ -286,7 +305,7 @@ class _AccountCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: const [
               Text(
-                'My Account',
+                'Gude Wallet',
                 style: TextStyle(
                     color: Colors.white70,
                     fontSize: 15,
@@ -328,6 +347,13 @@ class _AccountCard extends StatelessWidget {
 
           const SizedBox(height: 8),
 
+          const Text(
+            'Earned from your Gude sales and services',
+            style: TextStyle(color: Colors.white70, fontSize: 11),
+          ),
+
+          const SizedBox(height: 8),
+
           // Days left pill — centered
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -343,6 +369,24 @@ class _AccountCard extends StatelessWidget {
                   fontSize: 11,
                   fontWeight: FontWeight.w600),
             ),
+          ),
+          const SizedBox(height: 7),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFD166).withOpacity(0.18),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFFFD166).withOpacity(0.5)),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.stars_rounded, color: Color(0xFFFFD166), size: 15),
+              const SizedBox(width: 5),
+              Text('$points Gude Points',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800)),
+            ]),
           ),
         ],
         ),
@@ -645,13 +689,17 @@ class _CustomiseSheetState extends State<_CustomiseSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
+    return SafeArea(
+      top: false,
+      child: Container(
+        constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.84),
+        decoration: const BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+        child: Column(children: [
         Center(
           child: Container(
             width: 40,
@@ -670,34 +718,41 @@ class _CustomiseSheetState extends State<_CustomiseSheet> {
         const SizedBox(height: 4),
         const Text('Select the actions you want on your home screen',
             style: TextStyle(fontSize: 12, color: AppColors.textGrey)),
-        const SizedBox(height: 20),
-        ...widget.all.map((qa) {
-          final isOn = _selected.contains(qa.label);
-          return ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                  color: qa.color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10)),
-              child: Icon(qa.icon, color: qa.color, size: 20),
-            ),
-            title: Text(qa.label,
-                style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textDark)),
-            trailing: Switch(
-              value: isOn,
-              activeColor: AppColors.primary,
-              onChanged: (_) => setState(() {
-                isOn ? _selected.remove(qa.label) : _selected.add(qa.label);
-              }),
-            ),
-          );
-        }),
         const SizedBox(height: 12),
+        Expanded(
+          child: ListView.builder(
+            itemCount: widget.all.length,
+            itemBuilder: (_, index) {
+              final qa = widget.all[index];
+              final isOn = _selected.contains(qa.label);
+              return ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                      color: qa.color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10)),
+                  child: Icon(qa.icon, color: qa.color, size: 20),
+                ),
+                title: Text(qa.label,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textDark)),
+                trailing: Switch(
+                  value: isOn,
+                  activeColor: AppColors.primary,
+                  onChanged: (_) => setState(() {
+                    isOn ? _selected.remove(qa.label) : _selected.add(qa.label);
+                  }),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 10),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
@@ -719,7 +774,8 @@ class _CustomiseSheetState extends State<_CustomiseSheet> {
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
           ),
         ),
-      ]),
+        ]),
+      ),
     );
   }
 }

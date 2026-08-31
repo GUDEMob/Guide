@@ -218,6 +218,158 @@ class _Wishlist {
 // ════════════════════════════════════════════════════════════════
 //  Marketplace Landing
 // ════════════════════════════════════════════════════════════════
+class _StudentMarketToggle extends StatelessWidget {
+  final String mode;
+  final ValueChanged<String> onChanged;
+
+  const _StudentMarketToggle({required this.mode, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFE8EB),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _C.primary.withOpacity(0.14)),
+      ),
+      child: Row(children: [
+        Expanded(
+          child: _ModeOption(
+            selected: mode == 'buy',
+            icon: Icons.shopping_bag_outlined,
+            label: 'Buy',
+            subtitle: 'Browse student deals',
+            onTap: () => onChanged('buy'),
+          ),
+        ),
+        Expanded(
+          child: _ModeOption(
+            selected: mode == 'sell',
+            icon: Icons.storefront_outlined,
+            label: 'Sell',
+            subtitle: 'Offer items or skills',
+            onTap: () => onChanged('sell'),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+class _ModeOption extends StatelessWidget {
+  final bool selected;
+  final IconData icon;
+  final String label, subtitle;
+  final VoidCallback onTap;
+
+  const _ModeOption({
+    required this.selected,
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 8),
+        decoration: BoxDecoration(
+          color: selected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: selected
+              ? [BoxShadow(color: Colors.black.withOpacity(0.07), blurRadius: 8)]
+              : null,
+        ),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(icon, color: selected ? _C.primary : _C.grey, size: 19),
+          const SizedBox(width: 7),
+          Flexible(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(label,
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: selected ? _C.primary : _C.dark)),
+              Text(subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 9, color: _C.grey)),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+class _CompactListingAction extends StatefulWidget {
+  final String tooltip;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _CompactListingAction({
+    required this.tooltip,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  State<_CompactListingAction> createState() => _CompactListingActionState();
+}
+
+class _CompactListingActionState extends State<_CompactListingAction> {
+  bool _hovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: widget.tooltip,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovering = true),
+        onExit: (_) => setState(() => _hovering = false),
+        child: InkWell(
+          onTap: widget.onTap,
+          borderRadius: BorderRadius.circular(13),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: _hovering ? 132 : 46,
+            height: 46,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: widget.color.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(13),
+              border: Border.all(color: widget.color.withOpacity(0.28)),
+            ),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(widget.icon, color: widget.color, size: 20),
+              if (_hovering) ...[
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(widget.tooltip,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: widget.color,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700)),
+                ),
+              ],
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _BuyerShortcut extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -266,6 +418,7 @@ class MarketplacePage extends StatefulWidget {
 
 class _MarketplacePageState extends State<MarketplacePage> {
   final _cart = _Cart();
+  String _studentMode = 'buy';
   String _filter = 'All';
   String _searchQuery = '';
   final _searchCtrl = TextEditingController();
@@ -411,6 +564,41 @@ class _MarketplacePageState extends State<MarketplacePage> {
                 ),
 
                 // ── SPLIT listing buttons ───────────────────
+                if (!widget.isBuyer)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: _StudentMarketToggle(
+                      mode: _studentMode,
+                      onChanged: (mode) => setState(() => _studentMode = mode),
+                    ),
+                  ),
+
+                if (!widget.isBuyer && _studentMode == 'sell')
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: Row(children: [
+                      const Text('Create a listing',
+                          style: TextStyle(
+                              color: _C.dark,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700)),
+                      const Spacer(),
+                      _CompactListingAction(
+                        tooltip: 'List a product',
+                        icon: Icons.inventory_2_outlined,
+                        color: _C.primary,
+                        onTap: () => context.push('/marketplace/create?type=product'),
+                      ),
+                      const SizedBox(width: 10),
+                      _CompactListingAction(
+                        tooltip: 'List a service',
+                        icon: Icons.design_services_outlined,
+                        color: const Color(0xFF3B82F6),
+                        onTap: () => context.push('/marketplace/create?type=service'),
+                      ),
+                    ]),
+                  ),
+
                 if (widget.isBuyer)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -443,108 +631,6 @@ class _MarketplacePageState extends State<MarketplacePage> {
                       ),
                     ]),
                   ),
-
-                if (!widget.isBuyer)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: Row(
-                    children: [
-                      // List a Product
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => _showListingSheet(context, 'Product'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 13),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                  color: _C.primary.withOpacity(0.4),
-                                  width: 1.5),
-                            ),
-                            child: Row(children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: _C.primary.withOpacity(0.08),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(Icons.inventory_2_outlined,
-                                    color: _C.primary, size: 16),
-                              ),
-                              const SizedBox(width: 8),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('List a Product',
-                                        style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                            color: _C.dark)),
-                                    Text('Physical items',
-                                        style: TextStyle(
-                                            fontSize: 10, color: _C.grey)),
-                                  ],
-                                ),
-                              ),
-                            ]),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      // List a Service
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => _showListingSheet(context, 'Service'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 13),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                  color:
-                                      const Color(0xFF3B82F6).withOpacity(0.4),
-                                  width: 1.5),
-                            ),
-                            child: Row(children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color:
-                                      const Color(0xFF3B82F6).withOpacity(0.08),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(
-                                    Icons.design_services_outlined,
-                                    color: Color(0xFF3B82F6),
-                                    size: 16),
-                              ),
-                              const SizedBox(width: 8),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('List a Service',
-                                        style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                            color: _C.dark)),
-                                    Text('Skills & gigs',
-                                        style: TextStyle(
-                                            fontSize: 10, color: _C.grey)),
-                                  ],
-                                ),
-                              ),
-                            ]),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
 
                 // ── Search (functional) ─────────────────────
                 Padding(
