@@ -29,6 +29,19 @@ class PocketTransaction {
   PocketTransaction(this.label, this.amount, this.isCredit, this.date);
 }
 
+class GudePointActivity {
+  final String id;
+  final String reason;
+  final int points;
+  final DateTime date;
+  const GudePointActivity({
+    required this.id,
+    required this.reason,
+    required this.points,
+    required this.date,
+  });
+}
+
 class WalletService extends ChangeNotifier {
   static final WalletService _instance = WalletService._internal();
   factory WalletService() => _instance;
@@ -36,6 +49,58 @@ class WalletService extends ChangeNotifier {
 
   bool _initialised = false;
   double initialMainAccountBalance = 0.0;
+  double _gudeEarningsBalance = 0.0;
+  int _gudePoints = 250;
+  final List<GudePointActivity> _pointActivities = [];
+  final Set<String> _awardedPointActivities = {};
+
+  /// Marketplace earnings are kept separate from personal wallet money.
+  double get gudeEarningsBalance => _gudeEarningsBalance;
+  int get gudePoints => _gudePoints;
+  List<GudePointActivity> get pointActivities =>
+      List.unmodifiable(_pointActivities);
+
+  void recordGudeEarning(double amount, String source) {
+    if (amount <= 0) return;
+    _gudeEarningsBalance += amount;
+    awardGudePoints(
+      20,
+      'Completed sale: $source',
+      activityId: 'sale_${DateTime.now().millisecondsSinceEpoch}',
+    );
+  }
+
+  bool awardGudePoints(int points, String reason, {String? activityId}) {
+    if (points <= 0) return false;
+    final id = activityId ??
+        '${DateTime.now().millisecondsSinceEpoch}_${reason.hashCode}';
+    if (_awardedPointActivities.contains(id)) return false;
+    _awardedPointActivities.add(id);
+    _gudePoints += points;
+    _pointActivities.insert(
+      0,
+      GudePointActivity(
+          id: id, reason: reason, points: points, date: DateTime.now()),
+    );
+    notifyListeners();
+    return true;
+  }
+
+  bool redeemGudePoints(int points, String rewardName) {
+    if (points <= 0 || points > _gudePoints) return false;
+    _gudePoints -= points;
+    _pointActivities.insert(
+      0,
+      GudePointActivity(
+        id: 'redeem_${DateTime.now().millisecondsSinceEpoch}',
+        reason: 'Redeemed $rewardName',
+        points: -points,
+        date: DateTime.now(),
+      ),
+    );
+    notifyListeners();
+    return true;
+  }
 
   // ── Main Account pocket ID ────────────────────────────────
   static const _mainPocketId = 'main_account';
@@ -91,6 +156,32 @@ class WalletService extends ChangeNotifier {
             : [],
       ),
     );
+
+    // Ready-made, zero-balance pockets demonstrate the flexible wallet
+    // without moving any of the student's real available balance.
+    _pockets.addAll([
+      Pocket(
+        id: 'savings_pocket',
+        name: 'Savings',
+        emoji: '\u{1F4B0}',
+        color: const Color(0xFF8F9AA8),
+        balance: 0,
+      ),
+      Pocket(
+        id: 'budget_pocket',
+        name: 'Monthly Budget',
+        emoji: '\u{1F4CA}',
+        color: const Color(0xFF1A1A1A),
+        balance: 0,
+      ),
+      Pocket(
+        id: 'allowance_pocket',
+        name: 'Allowance',
+        emoji: '\u{1F392}',
+        color: const Color(0xFFD4A017),
+        balance: 0,
+      ),
+    ]);
 
     initialMainAccountBalance =
         income; // ← set directly from income, not balance

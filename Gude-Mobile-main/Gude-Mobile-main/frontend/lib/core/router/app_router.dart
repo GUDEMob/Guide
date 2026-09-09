@@ -130,7 +130,8 @@ class AppRouter {
       // ── Marketplace sub-screens (outside shells) ───────────────────
       GoRoute(
           path: '/marketplace/create',
-          builder: (c, s) => const CreateListingPage()),
+          builder: (c, s) => CreateListingPage(
+              initialTab: s.uri.queryParameters['type'] == 'service' ? 1 : 0)),
       GoRoute(
           path: '/marketplace/jobs',
           builder: (c, s) => const JobDashboardPage()),
