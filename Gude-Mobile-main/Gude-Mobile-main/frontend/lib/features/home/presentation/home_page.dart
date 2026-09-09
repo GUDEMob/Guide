@@ -151,8 +151,8 @@ class _HomePageState extends State<HomePage> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(9),
                   child: Image.asset(
-                    'assets/images/gude_logo.png',
-                    fit: BoxFit.cover,
+                    'assets/images/gude_logo.jpg',
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
@@ -280,71 +280,71 @@ class _AccountCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
-        children: [
-          // "My Account -->"
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Text(
-                'My Account',
-                style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.2),
-              ),
-              SizedBox(width: 8),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // Balance + eye icon — centered
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                visible ? 'R ${balance.toStringAsFixed(2)}' : 'R ••••••',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -1),
-              ),
-              const SizedBox(width: 10),
-              GestureDetector(
-                onTap: onToggle,
-                child: Icon(
-                  visible
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined,
-                  color: Colors.white60,
-                  size: 22,
+          children: [
+            // "My Account -->"
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Text(
+                  'My Account',
+                  style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2),
                 ),
+                SizedBox(width: 8),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // Balance + eye icon — centered
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  visible ? 'R ${balance.toStringAsFixed(2)}' : 'R ••••••',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -1),
+                ),
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: onToggle,
+                  child: Icon(
+                    visible
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                    color: Colors.white60,
+                    size: 22,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 8),
+
+            // Days left pill — centered
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white24),
               ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          // Days left pill — centered
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white24),
+              child: Text(
+                '⏳  $daysLeft days left this month',
+                style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600),
+              ),
             ),
-            child: Text(
-              '⏳  $daysLeft days left this month',
-              style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
+          ],
         ),
       ),
     );

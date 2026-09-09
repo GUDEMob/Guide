@@ -6,12 +6,12 @@ import 'package:gude_app/services/user_role_service.dart';
 
 class _C {
   static const primary = Color(0xFFE30613);
-  static const primaryDark = Color(0xFFB0000E);
   static const dark = Color(0xFF1A1A1A);
   static const grey = Color(0xFF888888);
   static const border = Color(0xFFE8E8E8);
   static const focusBorder = Color(0xFF444444); // dark grey focus, NOT red
   static const inputBg = Color(0xFFFAFAFA);
+  static const warmCanvas = Color(0xFFFFFBF9);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -41,7 +41,6 @@ class _SignupPageState extends State<SignupPage> {
   bool _obscureConfirm = true;
   String? _selectedInstitution;
   bool _showCustomInput = false;
-  String? _institutionDomain;
 
   @override
   void dispose() {
@@ -81,7 +80,7 @@ class _SignupPageState extends State<SignupPage> {
       context.go('/institution/marketplace');
     } else if (_userType == 'buyer') {
       userService.role = 'buyer';
-      context.go('/onboarding');
+      context.go('/buyer-onboarding/welcome');
     } else {
       userService.role = 'student';
       context.go('/onboarding');
@@ -135,8 +134,9 @@ class _SignupPageState extends State<SignupPage> {
 
   String? _validateName(String? v) {
     if (v == null || v.isEmpty) return 'Full name is required';
-    if (_userType == 'student' && v.trim().split(' ').length < 2)
+    if (_userType == 'student' && v.trim().split(' ').length < 2) {
       return 'Enter first and last name';
+    }
     return null;
   }
 
@@ -161,19 +161,22 @@ class _SignupPageState extends State<SignupPage> {
     if (_userType == 'student') {
       final domain = _getDomain();
       if (domain != null && domain.isNotEmpty) {
-        if (!v.toLowerCase().endsWith('@$domain'))
+        if (!v.toLowerCase().endsWith('@$domain')) {
           return 'Use your student email ending in @$domain';
+        }
         return null;
       }
       final re =
           RegExp(r'^[^@]+@[^@]+\.(ac\.za|edu\.za)$', caseSensitive: false);
-      if (!re.hasMatch(v))
+      if (!re.hasMatch(v)) {
         return 'Use your official student email (.ac.za or .edu.za)';
+      }
     } else if (_userType == 'institution') {
       final re =
           RegExp(r'^[^@]+@[^@]+\.(ac\.za|edu\.za)$', caseSensitive: false);
-      if (!re.hasMatch(v))
+      if (!re.hasMatch(v)) {
         return 'Use your institution email ending in .ac.za or .edu.za';
+      }
     } else {
       final re = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
       if (!re.hasMatch(v)) return 'Enter a valid email address';
@@ -263,141 +266,299 @@ class _RoleSelectionPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      child: Column(
+      child: ColoredBox(
+        color: _C.warmCanvas,
+        child: Column(
+          children: [
+            _SignupHero(
+              title: 'Get Started',
+              subtitle: "Join the Gude community today!",
+              illustration: '🚀',
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Join as',
+                    style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                        color: _C.dark,
+                        letterSpacing: 0),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Choose how you want to use Gude',
+                    style: TextStyle(fontSize: 13, color: _C.grey),
+                  ),
+                  const SizedBox(height: 14),
+                  const _RoleMoodStrip(),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _RoleCard(
+                          title: 'Sign up as\na Student',
+                          subtitle:
+                              'Sell skills, earn income,\nmanage your wallet',
+                          selected: selectedUserType == 'student',
+                          onTap: () => onSelectUserType('student'),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: _RoleCard(
+                          title: 'Sign up as\nan Institution',
+                          subtitle:
+                              'Post jobs, find talent,\nmanage applications',
+                          selected: selectedUserType == 'institution',
+                          onTap: () => onSelectUserType('institution'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _RoleCard(
+                          title: 'Sign up as\na Buyer',
+                          subtitle: 'Hire students, buy\nservices & products',
+                          selected: selectedUserType == 'buyer',
+                          onTap: () => onSelectUserType('buyer'),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(child: Container()),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _RolePreview(selectedUserType: selectedUserType),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: selectedUserType.isEmpty
+                            ? const Color(0xFFDDDDDD)
+                            : _C.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        elevation: selectedUserType.isEmpty ? 0 : 4,
+                        shadowColor: _C.primary.withValues(alpha: 0.4),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                      ),
+                      onPressed: selectedUserType.isEmpty ? null : onNext,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            selectedUserType.isEmpty
+                                ? 'Select a role to continue'
+                                : 'Continue as ${selectedUserType == 'student' ? 'Student' : selectedUserType == 'institution' ? 'Institution' : 'Buyer'}',
+                            style: const TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.w700),
+                          ),
+                          if (selectedUserType.isNotEmpty) ...[
+                            const SizedBox(width: 8),
+                            const Icon(Icons.arrow_forward_rounded, size: 18),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _Divider(),
+                  const SizedBox(height: 16),
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    _SocialBtn(
+                        icon: Icons.g_mobiledata_rounded,
+                        label: 'Google',
+                        onTap: () {}),
+                    const SizedBox(width: 12),
+                    _SocialBtn(
+                        icon: Icons.facebook_rounded,
+                        label: 'Facebook',
+                        onTap: () {}),
+                    const SizedBox(width: 12),
+                    _SocialBtn(
+                        icon: Icons.apple_rounded,
+                        label: 'Apple',
+                        onTap: () {}),
+                  ]),
+                  const SizedBox(height: 24),
+                  Center(
+                    child: GestureDetector(
+                      onTap: onLogin,
+                      child: RichText(
+                        text: const TextSpan(
+                          text: 'Already have an account? ',
+                          style: TextStyle(color: _C.grey, fontSize: 14),
+                          children: [
+                            TextSpan(
+                              text: 'Log In',
+                              style: TextStyle(
+                                  color: _C.primary,
+                                  fontWeight: FontWeight.w700),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// FORM PAGE
+// ─────────────────────────────────────────────────────────────
+class _RoleMoodStrip extends StatelessWidget {
+  const _RoleMoodStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: const [
+        _MoodChip(
+          icon: Icons.bolt_rounded,
+          label: 'Earn',
+          color: _C.primary,
+          background: Color(0xFFFFECEC),
+        ),
+        SizedBox(width: 8),
+        _MoodChip(
+          icon: Icons.work_rounded,
+          label: 'Hire',
+          color: Color(0xFF2563EB),
+          background: Color(0xFFEFF6FF),
+        ),
+        SizedBox(width: 8),
+        _MoodChip(
+          icon: Icons.storefront_rounded,
+          label: 'Shop',
+          color: Color(0xFF16875D),
+          background: Color(0xFFEAFBF3),
+        ),
+      ],
+    );
+  }
+}
+
+class _MoodChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Color background;
+
+  const _MoodChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.background,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.12)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          _SignupHero(
-            title: 'Get Started',
-            subtitle: "Join the Gude community today!",
-            illustration: '🚀',
+          Icon(icon, color: color, size: 15),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+            ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
+        ],
+      ),
+    );
+  }
+}
+
+class _RolePreview extends StatelessWidget {
+  final String selectedUserType;
+
+  const _RolePreview({required this.selectedUserType});
+
+  @override
+  Widget build(BuildContext context) {
+    final data = _dataFor(selectedUserType);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: data.color.withValues(alpha: 0.18)),
+        boxShadow: [
+          BoxShadow(
+            color: data.color
+                .withValues(alpha: selectedUserType.isEmpty ? 0.06 : 0.14),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [data.color, data.color2],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(data.icon, color: Colors.white, size: 23),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Join as',
-                  style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w900,
-                      color: _C.dark,
-                      letterSpacing: -0.8),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Choose how you want to use Gude',
-                  style: TextStyle(fontSize: 13, color: _C.grey),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _RoleCard(
-                        emoji: '🎓',
-                        title: 'Sign up as\na Student',
-                        subtitle:
-                            'Sell skills, earn income,\nmanage your wallet',
-                        selected: selectedUserType == 'student',
-                        onTap: () => onSelectUserType('student'),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: _RoleCard(
-                        emoji: '🏛️',
-                        title: 'Sign up as\nan Institution',
-                        subtitle:
-                            'Post jobs, find talent,\nmanage applications',
-                        selected: selectedUserType == 'institution',
-                        onTap: () => onSelectUserType('institution'),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _RoleCard(
-                        emoji: '🛒',
-                        title: 'Sign up as\na Buyer',
-                        subtitle: 'Hire students, buy\nservices & products',
-                        selected: selectedUserType == 'buyer',
-                        onTap: () => onSelectUserType('buyer'),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(child: Container()),
-                  ],
-                ),
-                const SizedBox(height: 28),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: selectedUserType.isEmpty
-                          ? const Color(0xFFDDDDDD)
-                          : _C.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      elevation: selectedUserType.isEmpty ? 0 : 4,
-                      shadowColor: _C.primary.withOpacity(0.4),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                    ),
-                    onPressed: selectedUserType.isEmpty ? null : onNext,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          selectedUserType.isEmpty
-                              ? 'Select a role to continue'
-                              : 'Continue as ${selectedUserType == 'student' ? 'Student' : selectedUserType == 'institution' ? 'Institution' : 'Buyer'}',
-                          style: const TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.w700),
-                        ),
-                        if (selectedUserType.isNotEmpty) ...[
-                          const SizedBox(width: 8),
-                          const Icon(Icons.arrow_forward_rounded, size: 18),
-                        ],
-                      ],
-                    ),
+                Text(
+                  data.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _C.dark,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 16),
-                _Divider(),
-                const SizedBox(height: 16),
-                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  _SocialBtn(
-                      icon: Icons.g_mobiledata_rounded,
-                      label: 'Google',
-                      onTap: () {}),
-                  const SizedBox(width: 12),
-                  _SocialBtn(
-                      icon: Icons.facebook_rounded,
-                      label: 'Facebook',
-                      onTap: () {}),
-                  const SizedBox(width: 12),
-                  _SocialBtn(
-                      icon: Icons.apple_rounded, label: 'Apple', onTap: () {}),
-                ]),
-                const SizedBox(height: 24),
-                Center(
-                  child: GestureDetector(
-                    onTap: onLogin,
-                    child: RichText(
-                      text: const TextSpan(
-                        text: 'Already have an account? ',
-                        style: TextStyle(color: _C.grey, fontSize: 14),
-                        children: [
-                          TextSpan(
-                            text: 'Log In',
-                            style: TextStyle(
-                                color: _C.primary, fontWeight: FontWeight.w700),
-                          ),
-                        ],
-                      ),
-                    ),
+                const SizedBox(height: 3),
+                Text(
+                  data.subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _C.grey,
+                    fontSize: 12,
+                    height: 1.25,
                   ),
                 ),
               ],
@@ -407,11 +568,57 @@ class _RoleSelectionPage extends StatelessWidget {
       ),
     );
   }
+
+  _PreviewData _dataFor(String type) {
+    return switch (type) {
+      'student' => const _PreviewData(
+          icon: Icons.auto_awesome_rounded,
+          title: 'Student mode is built for earning.',
+          subtitle: 'Sell skills, track money and grow from campus.',
+          color: _C.primary,
+          color2: Color(0xFFFFB000),
+        ),
+      'institution' => const _PreviewData(
+          icon: Icons.hub_rounded,
+          title: 'Institution mode connects talent.',
+          subtitle: 'Post jobs, manage applicants and send alerts.',
+          color: Color(0xFF2563EB),
+          color2: Color(0xFF38BDF8),
+        ),
+      'buyer' => const _PreviewData(
+          icon: Icons.shopping_bag_rounded,
+          title: 'Buyer mode finds student services.',
+          subtitle: 'Shop products, save favourites and hire faster.',
+          color: Color(0xFF16875D),
+          color2: Color(0xFF55CFA0),
+        ),
+      _ => const _PreviewData(
+          icon: Icons.touch_app_rounded,
+          title: 'Pick the role that fits your day.',
+          subtitle: 'Gude changes shape around what you need.',
+          color: _C.primary,
+          color2: Color(0xFF2563EB),
+        ),
+    };
+  }
 }
 
-// ─────────────────────────────────────────────────────────────
-// FORM PAGE
-// ─────────────────────────────────────────────────────────────
+class _PreviewData {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final Color color2;
+
+  const _PreviewData({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.color2,
+  });
+}
+
 class _FormPage extends StatelessWidget {
   final String userType;
   final GlobalKey<FormState> formKey;
@@ -525,7 +732,7 @@ class _FormPage extends StatelessWidget {
                           fontSize: 26,
                           fontWeight: FontWeight.w900,
                           color: _C.dark,
-                          letterSpacing: -0.8)),
+                          letterSpacing: 0)),
                   const SizedBox(height: 20),
 
                   // Full Name
@@ -691,7 +898,7 @@ class _FormPage extends StatelessWidget {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         elevation: 4,
-                        shadowColor: _C.primary.withOpacity(0.4),
+                        shadowColor: _C.primary.withValues(alpha: 0.4),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14)),
                       ),
@@ -854,7 +1061,7 @@ class _SignupHero extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: 200,
+      height: 238,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xFFE30613), Color(0xFFB0000E)],
@@ -876,7 +1083,7 @@ class _SignupHero extends StatelessWidget {
               height: 120,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.07),
+                color: Colors.white.withValues(alpha: 0.07),
               ),
             ),
           ),
@@ -888,74 +1095,102 @@ class _SignupHero extends StatelessWidget {
               height: 80,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.06),
+                color: Colors.white.withValues(alpha: 0.06),
               ),
             ),
           ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 14, 24, 20),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              padding: const EdgeInsets.fromLTRB(24, 14, 24, 22),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(children: [
-                          if (showBack) ...[
-                            GestureDetector(
-                              onTap: onBack,
-                              child: Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.18),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(Icons.arrow_back_ios_rounded,
-                                    color: Colors.white, size: 14),
+                  Row(children: [
+                    if (showBack) ...[
+                      GestureDetector(
+                        onTap: onBack,
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.arrow_back_ios_rounded,
+                              color: Colors.white, size: 14),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                    ],
+                    Container(
+                      width: 154,
+                      height: 72,
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.12),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: const FittedBox(
+                        fit: BoxFit.contain,
+                        child:
+                            GudeLockup(logoSize: 80, textColor: Colors.white),
+                      ),
+                    ),
+                  ]),
+                  const Spacer(),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 28,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0,
+                                height: 1.1,
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(height: 5),
+                            Text(
+                              subtitle,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                                height: 1.5,
+                              ),
+                            ),
                           ],
-                          GudeLockup(logoSize: 36, textColor: Colors.white),
-                        ]),
-                        const Spacer(),
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.8,
-                            height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        width: 76,
+                        height: 78,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.14),
                           ),
                         ),
-                        const SizedBox(height: 5),
-                        Text(
-                          subtitle,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                            height: 1.5,
-                          ),
+                        child: Center(
+                          child: Text(illustration,
+                              style: const TextStyle(fontSize: 38)),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 80,
-                    height: 90,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Center(
-                      child: Text(illustration,
-                          style: const TextStyle(fontSize: 42)),
-                    ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -971,97 +1206,184 @@ class _SignupHero extends StatelessWidget {
 // ROLE CARD
 // ─────────────────────────────────────────────────────────────
 class _RoleCard extends StatelessWidget {
-  final String emoji, title, subtitle;
+  final String title, subtitle;
   final bool selected;
   final VoidCallback onTap;
 
   const _RoleCard({
-    required this.emoji,
     required this.title,
     required this.subtitle,
     required this.selected,
     required this.onTap,
   });
 
+  _RoleStyle get _style {
+    if (title.contains('Institution')) {
+      return const _RoleStyle(
+        icon: Icons.account_balance_rounded,
+        accent: Color(0xFF2563EB),
+        accent2: Color(0xFF38BDF8),
+        soft: Color(0xFFEFF6FF),
+      );
+    }
+    if (title.contains('Buyer')) {
+      return const _RoleStyle(
+        icon: Icons.shopping_cart_rounded,
+        accent: Color(0xFF16875D),
+        accent2: Color(0xFF55CFA0),
+        soft: Color(0xFFEAFBF3),
+      );
+    }
+    return const _RoleStyle(
+      icon: Icons.school_rounded,
+      accent: _C.primary,
+      accent2: Color(0xFFFFB000),
+      soft: Color(0xFFFFF4E1),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final style = _style;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: selected ? _C.primary.withOpacity(0.06) : Colors.white,
+          color: Colors.white,
+          gradient: selected
+              ? LinearGradient(
+                  colors: [
+                    style.accent.withValues(alpha: 0.1),
+                    style.accent2.withValues(alpha: 0.16),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: selected ? _C.primary : const Color(0xFFEEEEEE),
+            color: selected ? style.accent : const Color(0xFFEEEEEE),
             width: selected ? 2 : 1.5,
           ),
           boxShadow: selected
               ? [
                   BoxShadow(
-                    color: _C.primary.withOpacity(0.12),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
+                    color: style.accent.withValues(alpha: 0.18),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
                   )
                 ]
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 8,
                   )
                 ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? _C.primary.withOpacity(0.12)
-                        : const Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                      child: Text(emoji, style: const TextStyle(fontSize: 22))),
-                ),
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    color: selected ? _C.primary : Colors.transparent,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: selected ? _C.primary : const Color(0xFFCCCCCC),
-                      width: 2,
-                    ),
-                  ),
-                  child: selected
-                      ? const Icon(Icons.check, size: 12, color: Colors.white)
-                      : null,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                color: selected ? _C.primary : _C.dark,
-                height: 1.3,
+            Positioned(
+              right: -14,
+              bottom: -14,
+              child: Icon(
+                style.icon,
+                color: style.accent.withValues(alpha: selected ? 0.08 : 0.045),
+                size: 78,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: const TextStyle(fontSize: 11, color: _C.grey, height: 1.4),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: selected ? null : style.soft,
+                        gradient: selected
+                            ? LinearGradient(
+                                colors: [style.accent, style.accent2],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              )
+                            : null,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: style.accent.withValues(alpha: 0.16),
+                            blurRadius: 12,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Positioned(
+                            right: -3,
+                            top: -3,
+                            child: Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: selected ? Colors.white : style.accent2,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                          Center(
+                            child: Icon(
+                              style.icon,
+                              color: selected ? Colors.white : style.accent,
+                              size: 24,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        color: selected ? style.accent : Colors.transparent,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color:
+                              selected ? style.accent : const Color(0xFFCCCCCC),
+                          width: 2,
+                        ),
+                      ),
+                      child: selected
+                          ? const Icon(Icons.check,
+                              size: 12, color: Colors.white)
+                          : null,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: selected ? style.accent : _C.dark,
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                      fontSize: 11, color: _C.grey, height: 1.4),
+                ),
+              ],
             ),
           ],
         ),
@@ -1073,6 +1395,20 @@ class _RoleCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────
 // PASSWORD FIELD
 // ─────────────────────────────────────────────────────────────
+class _RoleStyle {
+  final IconData icon;
+  final Color accent;
+  final Color accent2;
+  final Color soft;
+
+  const _RoleStyle({
+    required this.icon,
+    required this.accent,
+    required this.accent2,
+    required this.soft,
+  });
+}
+
 class _PasswordField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
@@ -1157,7 +1493,7 @@ class _DropdownField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       isExpanded: true,
       validator: validator,
       onChanged: onChanged,
@@ -1225,7 +1561,8 @@ class _SocialBtn extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFFEEEEEE)),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6),
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04), blurRadius: 6),
           ],
         ),
         child: Icon(icon, size: 22, color: const Color(0xFF444444)),

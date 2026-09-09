@@ -12,6 +12,7 @@ class AppColors {
 class AppTheme {
   static ThemeData get light => ThemeData(
     useMaterial3: true,
+    splashFactory: InkRipple.splashFactory,
     scaffoldBackgroundColor: AppColors.background,
     colorScheme: ColorScheme.fromSeed(
       seedColor: AppColors.primary,

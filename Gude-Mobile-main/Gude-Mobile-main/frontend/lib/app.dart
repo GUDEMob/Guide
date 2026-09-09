@@ -11,6 +11,9 @@ class GudeApp extends StatelessWidget {
       title: 'Gude',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      scrollBehavior: const MaterialScrollBehavior().copyWith(
+        overscroll: false,
+      ),
       routerConfig: AppRouter.router,
       builder: (context, child) {
         // Constrain to phone width when running on desktop/tablet
