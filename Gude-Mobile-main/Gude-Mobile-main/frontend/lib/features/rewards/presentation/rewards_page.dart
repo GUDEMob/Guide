@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../services/wallet_service.dart';
 
 // ── Additional colours for rewards (not in core theme) ──
 class _RewardColors {
@@ -79,8 +80,11 @@ class RewardsPage extends StatefulWidget {
 
 class _RewardsPageState extends State<RewardsPage>
     with SingleTickerProviderStateMixin {
-  int _points = 1200;
+  late final WalletService _walletService;
+  bool _useAcademicPersonalisation = false;
   late TabController _tabCtrl;
+
+  int get _points => _walletService.gudePoints;
 
   final List<_Reward> _rewards = [
     _Reward(
@@ -189,11 +193,18 @@ class _RewardsPageState extends State<RewardsPage>
   @override
   void initState() {
     super.initState();
+    _walletService = WalletService()..initFromOnboarding();
+    _walletService.addListener(_refreshRewards);
     _tabCtrl = TabController(length: 2, vsync: this);
+  }
+
+  void _refreshRewards() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _walletService.removeListener(_refreshRewards);
     _tabCtrl.dispose();
     super.dispose();
   }
@@ -222,10 +233,8 @@ class _RewardsPageState extends State<RewardsPage>
       );
       return;
     }
-    setState(() {
-      _points -= r.cost;
-      r.claimed = true;
-    });
+    if (!_walletService.redeemGudePoints(r.cost, r.title)) return;
+    setState(() => r.claimed = true);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('🎉 ${r.title} claimed successfully!'),
@@ -238,10 +247,13 @@ class _RewardsPageState extends State<RewardsPage>
 
   void _completeChallenge(_Challenge c) {
     if (c.completed) return;
-    setState(() {
-      c.completed = true;
-      _points += c.points;
-    });
+    final awarded = _walletService.awardGudePoints(
+      c.points,
+      'Completed challenge: ${c.title}',
+      activityId: 'challenge_${c.title}',
+    );
+    setState(() => c.completed = true);
+    if (!awarded) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('🏆 Challenge complete! +${c.points} points earned!'),
@@ -326,6 +338,13 @@ class _RewardsPageState extends State<RewardsPage>
                   padding: const EdgeInsets.all(16),
                   children: [
                     _HowToEarnCard(),
+                    const SizedBox(height: 16),
+                    _RetailOffersCard(
+                      useAcademicPersonalisation:
+                          _useAcademicPersonalisation,
+                      onAcademicPersonalisationChanged: (value) => setState(
+                          () => _useAcademicPersonalisation = value),
+                    ),
                     const SizedBox(height: 16),
                     const Text(
                       'Redeem Rewards',
@@ -473,12 +492,146 @@ class _PointsHero extends StatelessWidget {
 // ─────────────────────────────────────────────
 // How to earn card
 // ─────────────────────────────────────────────
+class _RetailOffersCard extends StatelessWidget {
+  final bool useAcademicPersonalisation;
+  final ValueChanged<bool> onAcademicPersonalisationChanged;
+  const _RetailOffersCard({
+    required this.useAcademicPersonalisation,
+    required this.onAcademicPersonalisationChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFF1F2), Color(0xFFFFFBEB)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.primary.withOpacity(0.14)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Row(children: [
+          Icon(Icons.local_offer_rounded, color: AppColors.primary),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text('Offers picked for student life',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
+          ),
+          Text('PERSONALISED',
+              style: TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w900)),
+        ]),
+        const SizedBox(height: 5),
+        const Text(
+          'Based on useful Gude activity such as budgeting, saving, check-ins and marketplace participation.',
+          style: TextStyle(color: AppColors.textGrey, fontSize: 11, height: 1.35),
+        ),
+        const SizedBox(height: 12),
+        const _RetailOfferTile(
+          retailer: 'Shoprite',
+          offer: 'Student grocery specials',
+          colour: Color(0xFFD22027),
+          icon: Icons.shopping_basket_rounded,
+        ),
+        const SizedBox(height: 8),
+        const _RetailOfferTile(
+          retailer: 'Pick n Pay',
+          offer: 'Smart Shopper personal discounts',
+          colour: Color(0xFF0072CE),
+          icon: Icons.shopping_cart_rounded,
+        ),
+        const SizedBox(height: 12),
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+          value: useAcademicPersonalisation,
+          activeColor: AppColors.primary,
+          onChanged: onAcademicPersonalisationChanged,
+          title: const Text('Use my academic progress',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+          subtitle: const Text(
+            'Optional. Used only to celebrate effort and milestones, never to reduce access or value.',
+            style: TextStyle(fontSize: 10, color: AppColors.textGrey),
+          ),
+        ),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.8),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Text(
+            'Retail connection required before live discounts can be claimed. Offers shown here are feature previews.',
+            style: TextStyle(fontSize: 10, color: AppColors.textGrey),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+class _RetailOfferTile extends StatelessWidget {
+  final String retailer, offer;
+  final Color colour;
+  final IconData icon;
+  const _RetailOfferTile({
+    required this.retailer,
+    required this.offer,
+    required this.colour,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(11),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(13),
+        ),
+        child: Row(children: [
+          CircleAvatar(
+            backgroundColor: colour.withOpacity(0.1),
+            child: Icon(icon, color: colour, size: 19),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(retailer,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900)),
+              Text(offer,
+                  style: const TextStyle(fontSize: 10, color: AppColors.textGrey)),
+            ]),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+                color: colour.withOpacity(0.09),
+                borderRadius: BorderRadius.circular(12)),
+            child: Text('Connect',
+                style: TextStyle(
+                    color: colour, fontSize: 9, fontWeight: FontWeight.w900)),
+          ),
+        ]),
+      );
+}
+
 class _HowToEarnCard extends StatelessWidget {
   const _HowToEarnCard();
 
   @override
   Widget build(BuildContext context) {
     const items = [
+      ('+5 pts', 'Open Gude daily', '\u{26A1}'),
+      ('+15 pts', 'Library check-in', '\u{1F4DA}'),
+      ('+20 pts', 'Complete a sale', '\u{1F6CD}'),
+      ('+25 pts', 'Reach a savings goal', '\u{1F3AF}'),
       ('+10 pts', 'Log an expense',           '📝'),
       ('+50 pts', 'Stay in budget',           '✅'),
       ('+100 pts','Complete a challenge',     '🏆'),
@@ -500,11 +653,14 @@ class _HowToEarnCard extends StatelessWidget {
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
           children: items.map((item) {
             final (pts, label, emoji) = item;
-            return Expanded(
+            return SizedBox(
+              width: 96,
               child: Container(
                 margin: const EdgeInsets.only(right: 8),
                 padding: const EdgeInsets.all(10),
@@ -528,6 +684,7 @@ class _HowToEarnCard extends StatelessWidget {
               ),
             );
           }).toList(),
+          ),
         ),
       ]),
     );

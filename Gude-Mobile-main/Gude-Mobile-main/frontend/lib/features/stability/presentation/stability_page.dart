@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gude_app/core/theme/app_theme.dart';
+import 'package:gude_app/services/wallet_service.dart';
 
 // ─────────────────────────────────────────────
 // COLORS
@@ -323,6 +324,12 @@ class _StabilityPageState extends State<StabilityPage>
     final mood = majorityPositive ? 'well' : 'struggling';
     final moodLabel = majorityPositive ? 'Doing well' : 'Having a tough time';
     final delta = majorityPositive ? 5 : -7;
+    final today = DateTime.now();
+    WalletService().awardGudePoints(
+      10,
+      'Completed wellbeing check-in',
+      activityId: 'wellbeing_${today.year}_${today.month}_${today.day}',
+    );
 
     setState(() {
       _checkinDone = true;
@@ -347,7 +354,7 @@ class _StabilityPageState extends State<StabilityPage>
   void _showScoreExplanationDialog() {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('How your score is calculated',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
@@ -357,7 +364,7 @@ class _StabilityPageState extends State<StabilityPage>
                     fontSize: 13, height: 1.6, color: Color(0xFF444444)))),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: const Text('Got it',
                   style: TextStyle(
                       color: _C.primary, fontWeight: FontWeight.w700)))
@@ -477,7 +484,7 @@ class _StabilityPageState extends State<StabilityPage>
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 120),
+            padding: const EdgeInsets.only(bottom: 72),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -509,6 +516,31 @@ class _StabilityPageState extends State<StabilityPage>
                           style: TextStyle(fontSize: 12, color: Colors.white70)),
                     ],
                   ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 2, 16, 10),
+                  child: Row(children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('What do you need today?',
+                              style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: _C.dark)),
+                          SizedBox(height: 2),
+                          Text('Tap a card and Gude will guide your next step',
+                              style: TextStyle(fontSize: 11, color: _C.grey)),
+                        ],
+                      ),
+                    ),
+                    CircleAvatar(
+                      backgroundColor: Color(0xFFFFECEE),
+                      child: Icon(Icons.auto_awesome_rounded,
+                          color: _C.primary, size: 19),
+                    ),
+                  ]),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
