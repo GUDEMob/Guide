@@ -1,5 +1,4 @@
 // lib/core/router/app_router.dart
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gude_app/features/wallet/presentation/screens/transact_screen.dart';
 import 'package:gude_app/features/onboarding/feature_onboarding_page.dart';
@@ -16,12 +15,7 @@ import 'package:gude_app/features/messaging/presentation/unified_chat_page.dart'
 // Buyer onboarding — import each page from its own dedicated file.
 // Hide ALL onboarding pages from buyer_onboarding_welcome_page.dart so there
 // are no duplicate-symbol conflicts.
-import 'package:gude_app/features/auth/presentation/buyer_onboarding_welcome_page.dart'
-    hide
-        BuyerTypePage,
-        BuyerInterestsPage,
-        BuyerProfileSetupPage,
-        BuyerOnboardingCompletePage;
+import 'package:gude_app/features/auth/presentation/buyer_onboarding_welcome_page.dart';
 
 // Marketplace
 import 'package:gude_app/features/marketplace/presentation/marketplace_page.dart';
@@ -61,26 +55,24 @@ import 'package:gude_app/features/coach/presentation/coach_onboarding_page.dart'
 import 'package:gude_app/features/coach/presentation/coach_chat_page.dart';
 import 'package:gude_app/features/rewards/presentation/rewards_page.dart';
 import 'package:gude_app/features/challenges/presentation/challenges_page.dart';
-import 'package:gude_app/features/notifications/presentation/notifications_page.dart'
-    hide NotificationsPage; // keep marketplace one under /notifications
 // We alias the new one:
 import 'package:gude_app/features/notifications/presentation/notifications_page.dart'
     as nudge_notif;
 
 // ── Buyer Features ─────────────────────────────────────────────────
-import 'package:gude_app/features/buyer/presentation/buyer_messages_page.dart'
-    hide BuyerNavShell;
+import 'package:gude_app/features/buyer/presentation/buyer_messages_page.dart';
+import 'package:gude_app/features/buyer/presentation/buyer_marketplace_page.dart';
 import 'package:gude_app/features/buyer/presentation/buyer_profile_page.dart';
 
 // Institution
 import 'package:gude_app/features/institution/presentation/institution_marketplace_page.dart';
 import 'package:gude_app/features/institution/presentation/institution_profile_page.dart';
+import 'package:gude_app/features/institution/presentation/institution_talent_page.dart';
 
 // Shared Shells
 import 'package:gude_app/shared/widgets/bottom_nav_shell.dart';
 import 'package:gude_app/shared/widgets/institution_nav_shell.dart';
-import 'package:gude_app/shared/widgets/buyer_nav_shell.dart'
-    hide BuyerMessagesPage;
+import 'package:gude_app/shared/widgets/buyer_nav_shell.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -107,6 +99,20 @@ class AppRouter {
       GoRoute(
           path: '/buyer-onboarding/welcome',
           builder: (c, s) => const BuyerOnboardingWelcomePage()),
+      GoRoute(
+          path: '/buyer-onboarding/type',
+          builder: (c, s) => const BuyerTypePage()),
+      GoRoute(
+          path: '/buyer-onboarding/interests',
+          builder: (c, s) =>
+              BuyerInterestsPage(extra: s.extra as Map<String, dynamic>?)),
+      GoRoute(
+          path: '/buyer-onboarding/profile',
+          builder: (c, s) =>
+              BuyerProfileSetupPage(extra: s.extra as Map<String, dynamic>?)),
+      GoRoute(
+          path: '/buyer-onboarding/complete',
+          builder: (c, s) => const BuyerOnboardingCompletePage()),
 
       // ── NEW: Coach onboarding flow ───────────────────────────────────
       GoRoute(
@@ -233,7 +239,7 @@ class AppRouter {
         routes: [
           GoRoute(
               path: '/institution/browse',
-              builder: (c, s) => const MarketplacePage()),
+              builder: (c, s) => const InstitutionTalentPage()),
           GoRoute(
               path: '/institution/marketplace',
               builder: (c, s) => const InstitutionMarketplacePage()),
@@ -249,7 +255,7 @@ class AppRouter {
         routes: [
           GoRoute(
               path: '/buyer/marketplace',
-              builder: (c, s) => const MarketplacePage(isBuyer: true)),
+              builder: (c, s) => const BuyerMarketplacePage()),
           GoRoute(
               path: '/buyer/messages',
               builder: (c, s) => const BuyerMessagesPage()),

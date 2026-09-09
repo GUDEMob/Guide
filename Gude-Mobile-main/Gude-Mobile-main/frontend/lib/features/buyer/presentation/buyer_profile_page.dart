@@ -1,437 +1,257 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:gude_app/services/user_role_service.dart';
 
-// ─────────────────────────────────────────────
-// COLORS (mirrors your app palette)
-// ─────────────────────────────────────────────
-class _C {
-  static const primary = Color(0xFFE30613);
-  static const dark = Color(0xFF1A1A1A);
-  static const grey = Color(0xFF888888);
-  static const lightGrey = Color(0xFFF5F5F5);
-  static const border = Color(0xFFEEEEEE);
-  static const success = Color(0xFF4CAF50);
-  static const warning = Color(0xFFF59E0B);
+class _BuyerColors {
+  static const ink = Color(0xFF111827);
+  static const muted = Color(0xFF687385);
+  static const line = Color(0xFFDCE7FF);
+  static const canvas = Color(0xFFF6F8FF);
+  static const navy = Color(0xFF1D4ED8);
+  static const blue = Color(0xFF2563EB);
+  static const teal = Color(0xFF16875D);
+  static const amber = Color(0xFFF59E0B);
+  static const red = Color(0xFFE50914);
 }
 
-// ─────────────────────────────────────────────
-// MOCK PURCHASE DATA MODEL
-// Replace with real data source when ready.
-// ─────────────────────────────────────────────
-class _Purchase {
-  final String id;
+class _BuyerOrder {
   final String title;
-  final String provider;
-  final String price;
+  final String seller;
   final String date;
-  final String status; // 'completed' | 'in_progress' | 'cancelled'
-  final String emoji;
+  final String price;
+  final String status;
+  final IconData icon;
+  final Color color;
 
-  const _Purchase({
-    required this.id,
+  const _BuyerOrder({
     required this.title,
-    required this.provider,
-    required this.price,
+    required this.seller,
     required this.date,
+    required this.price,
     required this.status,
-    required this.emoji,
+    required this.icon,
+    required this.color,
   });
 }
 
-// Mock purchases — swap out for real data layer
-const _mockPurchases = [
-  _Purchase(
-    id: 'p1',
-    title: 'CV & Cover Letter Writing',
-    provider: 'Priya S.',
-    price: 'R180',
-    date: '20 Mar 2026',
-    status: 'completed',
-    emoji: '📄',
-  ),
-  _Purchase(
-    id: 'p2',
-    title: 'Graphic Design',
-    provider: 'Yusuf A.',
+const _orders = [
+  _BuyerOrder(
+    title: 'Social media design pack',
+    seller: 'Yusuf A.',
+    date: '28 Aug 2026',
     price: 'R200',
-    date: '14 Mar 2026',
-    status: 'in_progress',
-    emoji: '🎨',
+    status: 'In progress',
+    icon: Icons.palette_outlined,
+    color: _BuyerColors.blue,
   ),
-  _Purchase(
-    id: 'p3',
-    title: 'Photography Session',
-    provider: 'Nandi M.',
+  _BuyerOrder(
+    title: 'CV and cover letter rewrite',
+    seller: 'Priya S.',
+    date: '24 Aug 2026',
+    price: 'R180',
+    status: 'Awaiting brief',
+    icon: Icons.description_outlined,
+    color: _BuyerColors.teal,
+  ),
+  _BuyerOrder(
+    title: 'Product photography session',
+    seller: 'Nandi M.',
+    date: '18 Aug 2026',
     price: 'R350',
-    date: '2 Mar 2026',
-    status: 'completed',
-    emoji: '📷',
+    status: 'Booked',
+    icon: Icons.photo_camera_outlined,
+    color: _BuyerColors.amber,
   ),
-  _Purchase(
-    id: 'p4',
-    title: 'Coding Help – Python',
-    provider: 'Keanu N.',
-    price: 'R150',
-    date: '22 Feb 2026',
-    status: 'completed',
-    emoji: '💻',
-  ),
-  _Purchase(
-    id: 'p5',
-    title: 'Video Editing',
-    provider: 'Thabo G.',
-    price: 'R250',
-    date: '10 Feb 2026',
-    status: 'cancelled',
-    emoji: '🎬',
+  _BuyerOrder(
+    title: 'Python dashboard cleanup',
+    seller: 'Keanu N.',
+    date: '10 Aug 2026',
+    price: 'R150/hr',
+    status: 'Delivered',
+    icon: Icons.code_rounded,
+    color: _BuyerColors.navy,
   ),
 ];
 
-// ─────────────────────────────────────────────
-// BUYER PROFILE PAGE
-// ─────────────────────────────────────────────
-class BuyerProfilePage extends StatefulWidget {
+class BuyerProfilePage extends StatelessWidget {
   const BuyerProfilePage({super.key});
-
-  @override
-  State<BuyerProfilePage> createState() => _BuyerProfilePageState();
-}
-
-class _BuyerProfilePageState extends State<BuyerProfilePage> {
-  // ── Derived stats ──────────────────────────
-  int get _totalOrders => _mockPurchases.length;
-
-  String get _totalSpent {
-    int total = 0;
-    for (final p in _mockPurchases) {
-      if (p.status != 'cancelled') {
-        final digits = p.price.replaceAll(RegExp(r'[^0-9]'), '');
-        total += int.tryParse(digits) ?? 0;
-      }
-    }
-    return 'R$total';
-  }
-
-  // ── Logout dialog ──────────────────────────
-  void _showLogoutDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Log Out',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
-        ),
-        content: const Text(
-          'Are you sure you want to log out?',
-          style: TextStyle(fontSize: 14, color: Color(0xFF555555)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: _C.grey, fontWeight: FontWeight.w600),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _C.primary,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              context.go('/login');
-            },
-            child: const Text(
-              'Log Out',
-              style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Contact support ────────────────────────
-  void _contactSupport() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => _SupportSheet(),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: _BuyerColors.canvas,
       body: CustomScrollView(
         slivers: [
-          // ── App bar ──────────────────────────────
           SliverAppBar(
             pinned: true,
-            backgroundColor: _C.primary,
             elevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_rounded,
-                  color: Colors.white, size: 18),
-              onPressed: () => context.go('/buyer/marketplace'),
-            ),
+            backgroundColor: _BuyerColors.blue,
+            foregroundColor: Colors.white,
             title: const Text(
-              'My Profile',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700),
+              'Buyer Account',
+              style: TextStyle(fontWeight: FontWeight.w800),
             ),
-            centerTitle: true,
             actions: [
               IconButton(
-                icon: const Icon(Icons.edit_outlined,
-                    color: Colors.white, size: 20),
-                onPressed: () {}, // TODO: open edit profile
+                tooltip: 'Settings',
+                onPressed: () => _showSettingsSheet(context),
+                icon: const Icon(Icons.settings_outlined),
               ),
             ],
           ),
-
           SliverToBoxAdapter(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Profile header ──────────────────
-                Container(
-                  width: double.infinity,
-                  color: _C.primary,
-                  padding:
-                      const EdgeInsets.only(bottom: 28, left: 20, right: 20),
-                  child: Column(
-                    children: [
-                      // Avatar
-                      Stack(
-                        children: [
-                          Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.25),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                  color: Colors.white.withOpacity(0.6),
-                                  width: 2.5),
-                            ),
-                            child: const Center(
-                              child: Text(
-                                'J',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.w700),
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: GestureDetector(
-                              onTap: () {}, // TODO: pick image
-                              child: Container(
-                                width: 26,
-                                height: 26,
-                                decoration: const BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.camera_alt_rounded,
-                                    size: 14, color: _C.primary),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      // Name
-                      const Text(
-                        'Jane Buyer',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 3),
-                      // Email
-                      const Text(
-                        'jane@gmail.com',
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
-                      ),
-                      const SizedBox(height: 10),
-                      // Role badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.18),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.shopping_bag_outlined,
-                                color: Colors.white70, size: 13),
-                            SizedBox(width: 5),
-                            Text(
-                              'Buyer Account',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // ── Stats row ───────────────────────
-                Container(
-                  color: Colors.white,
+                const _AccountHero(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
                   child: Row(
                     children: [
-                      _StatCell(
-                          label: 'Orders',
-                          value: '$_totalOrders',
-                          bordered: true),
-                      _StatCell(
-                          label: 'City', value: 'Cape Town', bordered: true),
-                      _StatCell(
-                          label: 'Total Spent',
-                          value: _totalSpent,
-                          bordered: false),
+                      _ActionTile(
+                        icon: Icons.add_task_rounded,
+                        title: 'Post brief',
+                        subtitle: 'Start a request',
+                        color: _BuyerColors.blue,
+                        onTap: () => context.go('/buyer/marketplace'),
+                      ),
+                      const SizedBox(width: 10),
+                      _ActionTile(
+                        icon: Icons.forum_outlined,
+                        title: 'Inbox',
+                        subtitle: 'Reply to sellers',
+                        color: _BuyerColors.teal,
+                        onTap: () => context.go('/buyer/messages'),
+                      ),
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 12),
-
-                // ── Account info card ───────────────
-                _SectionCard(
-                  title: 'Account Information',
-                  child: Column(
-                    children: const [
-                      _InfoRow(
-                          icon: Icons.person_outline_rounded,
-                          label: 'Full Name',
-                          value: 'Jane Buyer'),
-                      _Divider(),
-                      _InfoRow(
-                          icon: Icons.email_outlined,
-                          label: 'Email',
-                          value: 'jane@gmail.com'),
-                      _Divider(),
-                      _InfoRow(
-                          icon: Icons.location_city_outlined,
-                          label: 'City',
-                          value: 'Cape Town'),
-                    ],
-                  ),
+                const SizedBox(height: 18),
+                const _SectionHeader(title: 'Account details'),
+                const _InfoPanel(
+                  children: [
+                    _InfoRow(
+                      icon: Icons.person_outline_rounded,
+                      label: 'Name',
+                      value: 'Jane Buyer',
+                    ),
+                    _InfoRow(
+                      icon: Icons.email_outlined,
+                      label: 'Email',
+                      value: 'jane@gmail.com',
+                    ),
+                    _InfoRow(
+                      icon: Icons.location_on_outlined,
+                      label: 'City',
+                      value: 'Cape Town',
+                    ),
+                  ],
                 ),
-
-                const SizedBox(height: 12),
-
-                // ── Purchase history ────────────────
-                _SectionCard(
-                  title: 'Purchase History',
-                  trailing: const Text(
-                    'See all',
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: _C.primary,
-                        fontWeight: FontWeight.w600),
-                  ),
-                  child: _mockPurchases.isEmpty
-                      ? const _EmptyHistory()
-                      : Column(
-                          children: List.generate(
-                            _mockPurchases.length,
-                            (i) => Column(
-                              children: [
-                                _PurchaseTile(purchase: _mockPurchases[i]),
-                                if (i < _mockPurchases.length - 1)
-                                  const _Divider(),
-                              ],
-                            ),
-                          ),
-                        ),
+                const SizedBox(height: 18),
+                const _SectionHeader(title: 'Orders'),
+              ],
+            ),
+          ),
+          SliverList.separated(
+            itemCount: _orders.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (_, index) {
+              return Padding(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  0,
+                  16,
+                  index == _orders.length - 1 ? 18 : 0,
                 ),
-
-                const SizedBox(height: 12),
-
-                // ── Help & support ──────────────────
-                _SectionCard(
-                  title: 'Help & Support',
-                  child: Column(
+                child: _OrderCard(order: _orders[index]),
+              );
+            },
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+              child: Column(
+                children: [
+                  const _InfoPanel(
                     children: [
-                      _MenuRow(
-                        icon: Icons.chat_bubble_outline_rounded,
-                        label: 'Contact Support',
-                        onTap: _contactSupport,
+                      _InfoRow(
+                        icon: Icons.verified_user_outlined,
+                        label: 'Buyer verification',
+                        value: 'Verified',
                       ),
-                      const _Divider(),
-                      _MenuRow(
-                        icon: Icons.help_outline_rounded,
-                        label: 'FAQs',
-                        onTap: () {}, // TODO
+                      _InfoRow(
+                        icon: Icons.credit_card_outlined,
+                        label: 'Payment method',
+                        value: 'Card ending 4028',
                       ),
-                      const _Divider(),
-                      _MenuRow(
-                        icon: Icons.privacy_tip_outlined,
-                        label: 'Privacy & Terms',
-                        onTap: () {}, // TODO
+                      _InfoRow(
+                        icon: Icons.support_agent_outlined,
+                        label: 'Support',
+                        value: 'Priority',
                       ),
                     ],
                   ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // ── Logout ──────────────────────────
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: GestureDetector(
-                    onTap: _showLogoutDialog,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: _C.primary.withOpacity(0.3)),
+                  const SizedBox(height: 14),
+                  OutlinedButton.icon(
+                    onPressed: () => _showLogoutDialog(context),
+                    icon: const Icon(Icons.logout_rounded),
+                    label: const Text('Log out'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _BuyerColors.red,
+                      side: BorderSide(
+                        color: _BuyerColors.red.withValues(alpha: 0.25),
                       ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.logout_rounded,
-                              color: _C.primary, size: 20),
-                          SizedBox(width: 12),
-                          Text(
-                            'Log Out',
-                            style: TextStyle(
-                                color: _C.primary,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14),
-                          ),
-                        ],
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
                       ),
                     ),
                   ),
-                ),
-
-                const SizedBox(height: 40),
-              ],
+                ],
+              ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSettingsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => const _SettingsSheet(),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    final router = GoRouter.of(context);
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Log out?'),
+        content: const Text('You will return to role selection.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              UserRoleService().clear();
+              Future.microtask(() => router.go('/signup'));
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: _BuyerColors.blue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Log out'),
           ),
         ],
       ),
@@ -439,34 +259,295 @@ class _BuyerProfilePageState extends State<BuyerProfilePage> {
   }
 }
 
-// ─────────────────────────────────────────────
-// STAT CELL
-// ─────────────────────────────────────────────
-class _StatCell extends StatelessWidget {
-  final String label, value;
-  final bool bordered;
-  const _StatCell(
-      {required this.label, required this.value, required this.bordered});
+class _SettingsSheet extends StatefulWidget {
+  const _SettingsSheet();
+
+  @override
+  State<_SettingsSheet> createState() => _SettingsSheetState();
+}
+
+class _SettingsSheetState extends State<_SettingsSheet> {
+  bool _orderUpdates = true;
+  bool _wishlistDeals = true;
+  bool _serviceReminders = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: _BuyerColors.line,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              'Buyer settings',
+              style: TextStyle(
+                color: _BuyerColors.ink,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 14),
+            _SettingsSwitch(
+              icon: Icons.notifications_active_outlined,
+              title: 'Order updates',
+              subtitle: 'Get alerts when sellers reply or deliver.',
+              value: _orderUpdates,
+              onChanged: (value) => setState(() => _orderUpdates = value),
+            ),
+            _SettingsSwitch(
+              icon: Icons.local_offer_outlined,
+              title: 'Wishlist deals',
+              subtitle: 'Notify me when saved items get discounts.',
+              value: _wishlistDeals,
+              onChanged: (value) => setState(() => _wishlistDeals = value),
+            ),
+            _SettingsSwitch(
+              icon: Icons.event_available_outlined,
+              title: 'Service reminders',
+              subtitle: 'Remind me before booked service sessions.',
+              value: _serviceReminders,
+              onChanged: (value) => setState(() => _serviceReminders = value),
+            ),
+            const SizedBox(height: 8),
+            const _SettingsAction(
+              icon: Icons.location_on_outlined,
+              title: 'Delivery location',
+              subtitle: 'Cape Town',
+            ),
+            const _SettingsAction(
+              icon: Icons.credit_card_outlined,
+              title: 'Payment methods',
+              subtitle: 'Card ending 4028',
+            ),
+            const _SettingsAction(
+              icon: Icons.lock_outline_rounded,
+              title: 'Privacy and security',
+              subtitle: 'Manage account protection',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsSwitch extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _SettingsSwitch({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      value: value,
+      onChanged: onChanged,
+      contentPadding: EdgeInsets.zero,
+      activeThumbColor: _BuyerColors.blue,
+      secondary: Icon(icon, color: _BuyerColors.blue),
+      title: Text(
+        title,
+        style: const TextStyle(
+          color: _BuyerColors.ink,
+          fontSize: 14,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(
+          color: _BuyerColors.muted,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsAction extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _SettingsAction({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(icon, color: _BuyerColors.blue),
+      title: Text(
+        title,
+        style: const TextStyle(
+          color: _BuyerColors.ink,
+          fontSize: 14,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(
+          color: _BuyerColors.muted,
+          fontSize: 12,
+        ),
+      ),
+      trailing: const Icon(
+        Icons.chevron_right_rounded,
+        color: _BuyerColors.muted,
+      ),
+      onTap: () {},
+    );
+  }
+}
+
+class _AccountHero extends StatelessWidget {
+  const _AccountHero();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_BuyerColors.red, _BuyerColors.blue],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 62,
+                height: 62,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.18),
+                  ),
+                ),
+                child: const Center(
+                  child: Text(
+                    'JB',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 20,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Jane Buyer',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 21,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Hiring student talent across design, content and tech.',
+                      style: TextStyle(
+                        color: Color(0xFFCBD5E1),
+                        fontSize: 12,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          const Row(
+            children: [
+              _Metric(label: 'Orders', value: '4'),
+              SizedBox(width: 10),
+              _Metric(label: 'Spent', value: 'R880'),
+              SizedBox(width: 10),
+              _Metric(label: 'Rating', value: '4.9'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Metric extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _Metric({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          border: Border(
-            right:
-                bordered ? const BorderSide(color: _C.border) : BorderSide.none,
-            bottom: const BorderSide(color: _C.border),
-          ),
+          color: Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(value,
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w700, color: _C.dark)),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 18,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(label, style: const TextStyle(fontSize: 11, color: _C.grey)),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFFCBD5E1),
+                fontWeight: FontWeight.w600,
+                fontSize: 11,
+              ),
+            ),
           ],
         ),
       ),
@@ -474,379 +555,245 @@ class _StatCell extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-// SECTION CARD WRAPPER
-// ─────────────────────────────────────────────
-class _SectionCard extends StatelessWidget {
+class _ActionTile extends StatelessWidget {
+  final IconData icon;
   final String title;
-  final Widget child;
-  final Widget? trailing;
-  const _SectionCard({required this.title, required this.child, this.trailing});
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: _BuyerColors.line),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _BuyerColors.ink,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _BuyerColors.muted,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: _BuyerColors.ink,
+          fontWeight: FontWeight.w900,
+          fontSize: 16,
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoPanel extends StatelessWidget {
+  final List<Widget> children;
+
+  const _InfoPanel({required this.children});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _C.border),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _BuyerColors.line),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: _C.dark)),
-                if (trailing != null) trailing!,
-              ],
-            ),
-          ),
-          const Divider(height: 1, color: _C.border),
-          child,
-        ],
-      ),
+      child: Column(children: children),
     );
   }
 }
 
-// ─────────────────────────────────────────────
-// INFO ROW
-// ─────────────────────────────────────────────
 class _InfoRow extends StatelessWidget {
   final IconData icon;
-  final String label, value;
-  const _InfoRow(
-      {required this.icon, required this.label, required this.value});
+  final String label;
+  final String value;
+
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: _C.grey),
+          Icon(icon, color: _BuyerColors.muted, size: 20),
           const SizedBox(width: 12),
-          Text(label, style: const TextStyle(fontSize: 13, color: _C.grey)),
-          const Spacer(),
-          Text(value,
+          Expanded(
+            child: Text(
+              label,
               style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w600, color: _C.dark)),
+                color: _BuyerColors.muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              color: _BuyerColors.ink,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────
-// PURCHASE TILE
-// ─────────────────────────────────────────────
-class _PurchaseTile extends StatelessWidget {
-  final _Purchase purchase;
-  const _PurchaseTile({required this.purchase});
+class _OrderCard extends StatelessWidget {
+  final _BuyerOrder order;
 
-  Color get _statusColor {
-    switch (purchase.status) {
-      case 'completed':
-        return _C.success;
-      case 'in_progress':
-        return _C.warning;
-      case 'cancelled':
-        return _C.grey;
-      default:
-        return _C.grey;
-    }
-  }
-
-  Color get _statusBg {
-    switch (purchase.status) {
-      case 'completed':
-        return const Color(0xFFEAF3DE);
-      case 'in_progress':
-        return const Color(0xFFFAEEDA);
-      case 'cancelled':
-        return const Color(0xFFF5F5F5);
-      default:
-        return const Color(0xFFF5F5F5);
-    }
-  }
-
-  String get _statusLabel {
-    switch (purchase.status) {
-      case 'completed':
-        return 'Completed';
-      case 'in_progress':
-        return 'In Progress';
-      case 'cancelled':
-        return 'Cancelled';
-      default:
-        return '';
-    }
-  }
+  const _OrderCard({required this.order});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _BuyerColors.line),
+      ),
       child: Row(
         children: [
-          // Emoji icon
           Container(
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: _C.lightGrey,
-              borderRadius: BorderRadius.circular(10),
+              color: order.color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Center(
-              child: Text(purchase.emoji, style: const TextStyle(fontSize: 22)),
-            ),
+            child: Icon(order.icon, color: order.color, size: 21),
           ),
           const SizedBox(width: 12),
-          // Title + provider + date
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(purchase.title,
-                    style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: _C.dark),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 2),
-                Text('${purchase.provider} · ${purchase.date}',
-                    style: const TextStyle(fontSize: 11, color: _C.grey)),
+                Text(
+                  order.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _BuyerColors.ink,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '${order.seller} - ${order.date}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _BuyerColors.muted,
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: order.color.withValues(alpha: 0.09),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    order.status,
+                    style: TextStyle(
+                      color: order.color,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
           const SizedBox(width: 10),
-          // Price + status
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(purchase.price,
-                  style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: _C.primary)),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: _statusBg,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  _statusLabel,
-                  style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: _statusColor),
-                ),
-              ),
-            ],
+          Text(
+            order.price,
+            style: const TextStyle(
+              color: _BuyerColors.ink,
+              fontWeight: FontWeight.w900,
+              fontSize: 13,
+            ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-// MENU ROW (Help & Support items)
-// ─────────────────────────────────────────────
-class _MenuRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  const _MenuRow(
-      {required this.icon, required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: _C.grey),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(label,
-                  style: const TextStyle(fontSize: 13, color: _C.dark)),
-            ),
-            const Icon(Icons.chevron_right_rounded, size: 18, color: _C.grey),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-// EMPTY HISTORY STATE
-// ─────────────────────────────────────────────
-class _EmptyHistory extends StatelessWidget {
-  const _EmptyHistory();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 32, horizontal: 20),
-      child: Center(
-        child: Column(
-          children: [
-            Icon(Icons.receipt_long_outlined, size: 40, color: _C.grey),
-            SizedBox(height: 10),
-            Text('No purchases yet',
-                style: TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w600, color: _C.dark)),
-            SizedBox(height: 4),
-            Text('Browse the marketplace to get started',
-                style: TextStyle(fontSize: 12, color: _C.grey)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-// THIN DIVIDER
-// ─────────────────────────────────────────────
-class _Divider extends StatelessWidget {
-  const _Divider();
-  @override
-  Widget build(BuildContext context) =>
-      const Divider(height: 1, color: _C.border, indent: 16, endIndent: 16);
-}
-
-// ─────────────────────────────────────────────
-// SUPPORT BOTTOM SHEET
-// ─────────────────────────────────────────────
-class _SupportSheet extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Handle
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: _C.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const Text('Contact Support',
-                style: TextStyle(
-                    fontSize: 17, fontWeight: FontWeight.w800, color: _C.dark)),
-            const SizedBox(height: 6),
-            const Text(
-              'Our team typically responds within a few hours.',
-              style: TextStyle(fontSize: 13, color: _C.grey),
-            ),
-            const SizedBox(height: 20),
-            // Options
-            _SupportOption(
-              icon: Icons.chat_bubble_outline_rounded,
-              title: 'Live Chat',
-              subtitle: 'Chat with a support agent now',
-              onTap: () => Navigator.pop(context),
-            ),
-            const SizedBox(height: 12),
-            _SupportOption(
-              icon: Icons.email_outlined,
-              title: 'Email Us',
-              subtitle: 'support@gude.co.za',
-              onTap: () => Navigator.pop(context),
-            ),
-            const SizedBox(height: 12),
-            _SupportOption(
-              icon: Icons.report_problem_outlined,
-              title: 'Report an Issue',
-              subtitle: 'Problem with an order or payment?',
-              onTap: () => Navigator.pop(context),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SupportOption extends StatelessWidget {
-  final IconData icon;
-  final String title, subtitle;
-  final VoidCallback onTap;
-  const _SupportOption(
-      {required this.icon,
-      required this.title,
-      required this.subtitle,
-      required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: _C.lightGrey,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _C.border),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: _C.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: _C.primary, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: _C.dark)),
-                const SizedBox(height: 2),
-                Text(subtitle,
-                    style: const TextStyle(fontSize: 11, color: _C.grey)),
-              ],
-            ),
-            const Spacer(),
-            const Icon(Icons.chevron_right_rounded, size: 18, color: _C.grey),
-          ],
-        ),
       ),
     );
   }
