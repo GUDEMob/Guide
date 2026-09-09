@@ -227,7 +227,7 @@ class _ChallengesPageState extends State<ChallengesPage> {
                 )),
           ],
 
-          const SizedBox(height: 80),
+          const SizedBox(height: 24),
         ],
       ),
     );

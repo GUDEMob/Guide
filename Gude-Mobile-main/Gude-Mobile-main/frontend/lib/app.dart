@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:gude_app/core/router/app_router.dart';
 import 'package:gude_app/core/theme/app_theme.dart';
@@ -11,6 +12,7 @@ class GudeApp extends StatelessWidget {
       title: 'Gude',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      scrollBehavior: const _GudeScrollBehavior(),
       routerConfig: AppRouter.router,
       builder: (context, child) {
         // Constrain to phone width when running on desktop/tablet
@@ -39,4 +41,21 @@ class GudeApp extends StatelessWidget {
       },
     );
   }
+}
+
+/// Makes every carousel feel natural on phones, touch laptops and Chrome.
+class _GudeScrollBehavior extends MaterialScrollBehavior {
+  const _GudeScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => const {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.stylus,
+        PointerDeviceKind.trackpad,
+      };
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) =>
+      const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
 }

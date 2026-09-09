@@ -67,6 +67,12 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _walletService = WalletService()..initFromOnboarding();
     _walletService.addListener(_refreshWallet);
+    final today = DateTime.now();
+    _walletService.awardGudePoints(
+      5,
+      'Daily Gude check-in',
+      activityId: 'daily_${today.year}_${today.month}_${today.day}',
+    );
   }
 
   void _refreshWallet() {
@@ -121,6 +127,12 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Colors.transparent,
       builder: (_) => _AddExpenseSheet(
         onSave: (amount, category, note) {
+          _walletService.awardGudePoints(
+            10,
+            'Logged an expense',
+            activityId:
+                'expense_${DateTime.now().millisecondsSinceEpoch}',
+          );
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content:
@@ -148,6 +160,17 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF7F8),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'aibuddy',
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        onPressed: () => context.push('/coach/chat'),
+        icon: const Icon(Icons.auto_awesome_rounded, size: 20),
+        label: const Text('Ask Gude',
+            style: TextStyle(fontWeight: FontWeight.w800)),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: CustomScrollView(
         slivers: [
           // ── App bar ────────────────────────────────────────
@@ -173,12 +196,28 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(width: 10),
-              Text(
-                _greetingLine,
-                style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('WELCOME BACK',
+                        style: TextStyle(
+                            fontSize: 9,
+                            letterSpacing: 1.1,
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w700)),
+                    Text(
+                      _greetingLine,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 15,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800),
+                    ),
+                  ],
+                ),
               ),
             ]),
             actions: [
@@ -217,7 +256,7 @@ class _HomePageState extends State<HomePage> {
               padding: const EdgeInsets.all(16),
               child: Column(children: [
                 // ── 1. Account card ────────────────────────────
-                _AccountCard(
+                _HomeWalletCard(
                   balance: _balance,
                   points: _walletService.gudePoints,
                   daysLeft: _daysLeft,
@@ -238,11 +277,11 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 16),
 
                 // ── 3. Tips & Challenges ───────────────────────────────
-                _TipsAndChallenges(
+                _DiscoveryChallenges(
                   onTap: () => context.push('/challenges'),
                 ),
 
-                const SizedBox(height: 100),
+                const SizedBox(height: 24),
               ]),
             ),
           ),
@@ -250,16 +289,6 @@ class _HomePageState extends State<HomePage> {
       ),
 
       // ── FABs — all same size ───────────────────────────────
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'aibuddy',
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 3,
-        onPressed: () => context.push('/coach/chat'),
-        icon: const Icon(Icons.auto_awesome_rounded, size: 20),
-        label: const Text('Ask Gude',
-            style: TextStyle(fontWeight: FontWeight.w700)),
-      ),
     );
   }
 }
@@ -267,6 +296,222 @@ class _HomePageState extends State<HomePage> {
 // ════════════════════════════════════════════════════════════
 //  Account Card
 // ════════════════════════════════════════════════════════════
+class _AskGudeLauncher extends StatelessWidget {
+  final VoidCallback onTap;
+  const _AskGudeLauncher({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.primary.withOpacity(0.24)),
+              boxShadow: [
+                BoxShadow(
+                    color: AppColors.primary.withOpacity(0.07),
+                    blurRadius: 16,
+                    offset: const Offset(0, 5)),
+              ],
+            ),
+            child: Row(children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(13)),
+                child: const Icon(Icons.auto_awesome_rounded,
+                    color: Colors.white, size: 21),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('What can Gude help with?',
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textDark)),
+                  SizedBox(height: 2),
+                  Text('Money, Market, support and student life',
+                      style: TextStyle(fontSize: 11, color: AppColors.textGrey)),
+                ]),
+              ),
+              const CircleAvatar(
+                radius: 17,
+                backgroundColor: Color(0xFFFFECEE),
+                child: Icon(Icons.arrow_forward_rounded,
+                    color: AppColors.primary, size: 18),
+              ),
+            ]),
+          ),
+        ),
+      );
+}
+
+class _HomeWalletCard extends StatelessWidget {
+  final double balance;
+  final int points, daysLeft;
+  final bool visible;
+  final VoidCallback onToggle, onTap;
+  const _HomeWalletCard({
+    required this.balance,
+    required this.points,
+    required this.daysLeft,
+    required this.visible,
+    required this.onToggle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [AppColors.primary, Color(0xFF9B0010)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(
+                  color: AppColors.primary.withOpacity(0.20),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8)),
+            ],
+          ),
+          child: Stack(children: [
+            Positioned(
+              right: -34,
+              top: -48,
+              child: Container(
+                width: 145,
+                height: 145,
+                decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.07)),
+              ),
+            ),
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(10)),
+                  child: const Icon(Icons.account_balance_wallet_rounded,
+                      color: Colors.white, size: 18),
+                ),
+                const SizedBox(width: 9),
+                const Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('Gude Wallet',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800)),
+                    Text('Marketplace earnings',
+                        style: TextStyle(color: Colors.white70, fontSize: 10)),
+                  ]),
+                ),
+                const Text('VIEW WALLET',
+                    style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 8,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.7)),
+                const SizedBox(width: 4),
+                const Icon(Icons.chevron_right_rounded,
+                    color: Colors.white70, size: 18),
+              ]),
+              const SizedBox(height: 17),
+              Row(children: [
+                Text(
+                  visible ? 'R ${balance.toStringAsFixed(2)}' : 'R ••••••',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 30,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.8),
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: onToggle,
+                  child: Icon(
+                      visible
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      color: Colors.white70,
+                      size: 20),
+                ),
+              ]),
+              const SizedBox(height: 15),
+              Row(children: [
+                Expanded(
+                  child: _WalletMetric(
+                    icon: Icons.stars_rounded,
+                    value: '$points points',
+                    label: 'Available rewards',
+                  ),
+                ),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: _WalletMetric(
+                    icon: Icons.calendar_today_outlined,
+                    value: '$daysLeft days',
+                    label: 'Left this month',
+                  ),
+                ),
+              ]),
+            ]),
+          ]),
+        ),
+      );
+}
+
+class _WalletMetric extends StatelessWidget {
+  final IconData icon;
+  final String value, label;
+  const _WalletMetric({required this.icon, required this.value, required this.label});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.12))),
+        child: Row(children: [
+          Icon(icon, color: const Color(0xFFFFD166), size: 17),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800)),
+              Text(label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white60, fontSize: 8)),
+            ]),
+          ),
+        ]),
+      );
+}
+
 class _AccountCard extends StatelessWidget {
   final double balance;
   final int points;
@@ -398,6 +643,113 @@ class _AccountCard extends StatelessWidget {
 // ════════════════════════════════════════════════════════════
 //  Tips & Challenges
 // ════════════════════════════════════════════════════════════
+class _DiscoveryChallenges extends StatelessWidget {
+  final VoidCallback onTap;
+  const _DiscoveryChallenges({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    const challenges = [
+      ('\u{1F4B0}', 'Survive till Month-End', 'R104 daily budget', 0.58, AppColors.primary),
+      ('\u{1F680}', 'Save R500 This Month', 'R215 saved so far', 0.43, _ExtraColors.green),
+      ('\u{1F4E6}', 'Leftover Challenge', 'Keep R200 by month-end', 0.25, _ExtraColors.blue),
+      ('\u{23F3}', 'NSFAS Survival Plan', 'Build an emergency plan', 0.15, _ExtraColors.amber),
+    ];
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        const Expanded(
+          child: Text('Made for you',
+              style: TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.textDark)),
+        ),
+        TextButton(onPressed: onTap, child: const Text('View all')),
+      ]),
+      const Text('Small moves chosen around your student goals',
+          style: TextStyle(fontSize: 11, color: AppColors.textGrey)),
+      const SizedBox(height: 11),
+      SizedBox(
+        height: 154,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          itemCount: challenges.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemBuilder: (_, index) {
+            final (emoji, title, subtitle, progress, color) = challenges[index];
+            return GestureDetector(
+              onTap: onTap,
+              child: Container(
+                width: 245,
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: color.withOpacity(0.24)),
+                  boxShadow: [
+                    BoxShadow(
+                        color: color.withOpacity(0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 5)),
+                  ],
+                ),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                          color: color.withOpacity(0.10),
+                          borderRadius: BorderRadius.circular(12)),
+                      child: Center(child: Text(emoji,
+                          style: const TextStyle(fontSize: 19))),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                          color: color.withOpacity(0.10),
+                          borderRadius: BorderRadius.circular(20)),
+                      child: Text('+100 pts',
+                          style: TextStyle(
+                              color: color,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800)),
+                    ),
+                  ]),
+                  const SizedBox(height: 10),
+                  Text(title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textDark)),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style: const TextStyle(fontSize: 10, color: AppColors.textGrey)),
+                  const Spacer(),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 6,
+                      backgroundColor: color.withOpacity(0.10),
+                      valueColor: AlwaysStoppedAnimation<Color>(color),
+                    ),
+                  ),
+                ]),
+              ),
+            );
+          },
+        ),
+      ),
+    ]);
+  }
+}
+
 class _TipsAndChallenges extends StatelessWidget {
   final VoidCallback onTap;
   const _TipsAndChallenges({required this.onTap});
@@ -538,6 +890,12 @@ class _QuickActionsSection extends StatelessWidget {
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textDark)),
+            Row(children: [
+            const Icon(Icons.swipe_rounded, size: 15, color: AppColors.textGrey),
+            const SizedBox(width: 4),
+            const Text('Swipe',
+                style: TextStyle(fontSize: 10, color: AppColors.textGrey)),
+            const SizedBox(width: 9),
             GestureDetector(
               onTap: onCustomise,
               child: Container(
@@ -559,6 +917,7 @@ class _QuickActionsSection extends StatelessWidget {
                 ]),
               ),
             ),
+            ]),
           ],
         ),
         const SizedBox(height: 12),
@@ -587,21 +946,26 @@ class _QuickActionsSection extends StatelessWidget {
             ),
           )
         else
-          GridView.count(
-            crossAxisCount: 3,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 1.05,
-            children: actions.map((qa) {
-              return _QuickActionTile(
-                icon: qa.icon,
-                label: qa.label,
-                color: qa.color,
-                onTap: () => onAction(qa),
-              );
-            }).toList(),
+          SizedBox(
+            height: 112,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: actions.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (_, index) {
+                final qa = actions[index];
+                return SizedBox(
+                  width: 102,
+                  child: _QuickActionTile(
+                    icon: qa.icon,
+                    label: qa.label,
+                    color: qa.color,
+                    onTap: () => onAction(qa),
+                  ),
+                );
+              },
+            ),
           ),
       ],
     );

@@ -507,7 +507,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
                 // ── Banner ─────────────────────────────────
                 Container(
                   margin: const EdgeInsets.all(16),
-                  height: 72,
+                  height: 92,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                         colors: widget.isBuyer
@@ -515,7 +515,13 @@ class _MarketplacePageState extends State<MarketplacePage> {
                             : const [Color(0xFFE30613), Color(0xFF7C4DFF)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                          color: _C.primary.withOpacity(0.18),
+                          blurRadius: 16,
+                          offset: const Offset(0, 7)),
+                    ],
                   ),
                   child: Row(children: [
                     Padding(
@@ -549,12 +555,12 @@ class _MarketplacePageState extends State<MarketplacePage> {
                       child: const Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('40% OFF',
+                          Text('2X POINTS',
                               style: TextStyle(
                                   color: _C.dark,
                                   fontSize: 15,
                                   fontWeight: FontWeight.w900)),
-                          Text('Black Friday',
+                          Text('This week',
                               style: TextStyle(
                                   color: _C.dark, fontSize: 10)),
                         ],
@@ -1583,7 +1589,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           ),
                         ]),
                       ),
-                      const SizedBox(height: 80),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
