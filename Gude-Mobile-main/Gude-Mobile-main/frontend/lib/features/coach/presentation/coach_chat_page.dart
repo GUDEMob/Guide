@@ -59,6 +59,7 @@ class _CoachChatPageState extends State<CoachChatPage> {
   final _scrollCtrl = ScrollController();
   final _promptScrollCtrl = ScrollController();
   bool _isTyping = false;
+  int _conversationEpoch = 0;
 
   final List<Map<String, String>> _history = [];
 
@@ -92,6 +93,28 @@ class _CoachChatPageState extends State<CoachChatPage> {
         0.0, _promptScrollCtrl.position.maxScrollExtent).toDouble();
     _promptScrollCtrl.animateTo(next,
         duration: const Duration(milliseconds: 320), curve: Curves.easeOutCubic);
+  }
+
+  void _handleBack() {
+    FocusScope.of(context).unfocus();
+    if (_messages.length > 1 || _isTyping) {
+      // Ignore any reply that was already being generated for this conversation.
+      _conversationEpoch++;
+      setState(() {
+        _messages.removeRange(1, _messages.length);
+        _isTyping = false;
+        _inputCtrl.clear();
+      });
+      if (_scrollCtrl.hasClients) {
+        _scrollCtrl.animateTo(
+          0,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      }
+      return;
+    }
+    context.pop();
   }
 
   // ── Load saved chat history ──────────────────────────────
@@ -287,6 +310,7 @@ RESPONSE RULES:
   // ── Send message ─────────────────────────────────────────
   Future<void> _send(String text) async {
     if (text.trim().isEmpty) return;
+    final requestEpoch = _conversationEpoch;
     _inputCtrl.clear();
 
     setState(() {
@@ -298,7 +322,7 @@ RESPONSE RULES:
 
     final reply = await _callClaude(text.trim());
 
-    if (!mounted) return;
+    if (!mounted || requestEpoch != _conversationEpoch) return;
     setState(() {
       _isTyping = false;
       _messages.add(_Msg(text: reply, isAi: true, time: DateTime.now()));
@@ -345,7 +369,8 @@ RESPONSE RULES:
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: _C.dark, size: 18),
-          onPressed: () => context.pop(),
+          tooltip: _messages.length > 1 ? 'Back to Ask Gude home' : 'Back',
+          onPressed: _handleBack,
         ),
         title: Row(children: [
           Container(
