@@ -1,4 +1,5 @@
 // lib/features/wallet/presentation/wallet_page.dart
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -179,6 +180,7 @@ class _WalletPageState extends State<WalletPage> {
   int _pocketIndex = 0;
   bool _balVisible = true;
   bool _showAllTx = false;
+  double _planningBalance = 5000;
   late WalletService _walletService;
   List<_PocketUI> _pockets = [];
 
@@ -251,6 +253,46 @@ class _WalletPageState extends State<WalletPage> {
   double get _currentBalance => _walletService.mainAccountBalance;
   double get _amountSpent =>
       (_initialBalance - _currentBalance).clamp(0, double.infinity);
+
+  Future<void> _editPlanningBalance() async {
+    final controller =
+        TextEditingController(text: _planningBalance.toStringAsFixed(0));
+    final result = await showDialog<double>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Planning Wallet'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Text(
+            'Try a future balance without changing any spendable money.',
+            style: TextStyle(color: _C.grey, fontSize: 13),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Amount to plan with',
+              prefixText: 'R ',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ]),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () => Navigator.pop(
+                dialogContext, double.tryParse(controller.text)),
+            child: const Text('Update plan'),
+          ),
+        ],
+      ),
+    );
+    if (result != null && result >= 0 && mounted) {
+      setState(() => _planningBalance = result);
+    }
+  }
 
   Color get _hColor => _score >= 70
       ? const Color(0xFF10B981)
@@ -462,6 +504,10 @@ class _WalletPageState extends State<WalletPage> {
             budget: _initialBalance,
             spent: _amountSpent,
             cats: _pocketCats,
+            gudeEarnings: _walletService.gudeEarningsBalance,
+            gudePoints: _walletService.gudePoints,
+            planningBalance: _planningBalance,
+            onEditPlanningBalance: _editPlanningBalance,
             onNavigate: (route) => context.push(route),
           ),
         ),
@@ -484,6 +530,9 @@ class _PocketContent extends StatelessWidget {
   final Color hColor;
   final String hLabel, hEmoji;
   final List<_Cat> cats;
+  final double gudeEarnings, planningBalance;
+  final int gudePoints;
+  final VoidCallback onEditPlanningBalance;
   final void Function(String) onNavigate;
 
   const _PocketContent({
@@ -503,8 +552,141 @@ class _PocketContent extends StatelessWidget {
     required this.budget,
     required this.spent,
     required this.cats,
+    required this.gudeEarnings,
+    required this.gudePoints,
+    required this.planningBalance,
+    required this.onEditPlanningBalance,
     required this.onNavigate,
   });
+
+  void _showPocketDetails(BuildContext context, _PocketUI pocket) {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => Container(
+        padding: EdgeInsets.fromLTRB(
+            18, 10, 18, MediaQuery.of(sheetContext).padding.bottom + 18),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+                color: _C.border, borderRadius: BorderRadius.circular(4)),
+          ),
+          const SizedBox(height: 16),
+          Row(children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: pocket.cardColor.withOpacity(0.12),
+              child: Text(pocket.emoji,
+                  style: const TextStyle(fontSize: 21)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(pocket.name,
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w900)),
+                const Text('Pocket details and controls',
+                    style: TextStyle(color: _C.grey, fontSize: 11)),
+              ]),
+            ),
+            Text('R${pocket.balance.toStringAsFixed(2)}',
+                style: const TextStyle(
+                    color: _C.primary, fontSize: 18, fontWeight: FontWeight.w900)),
+          ]),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+                color: _C.lightGrey, borderRadius: BorderRadius.circular(12)),
+            child: Row(children: [
+              const Icon(Icons.fingerprint_rounded, color: _C.grey, size: 19),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('Unique pocket identifier',
+                      style: TextStyle(color: _C.grey, fontSize: 10)),
+                  Text(pocket.cardNumber,
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                ]),
+              ),
+              IconButton(
+                tooltip: 'Copy identifier',
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: pocket.id));
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Pocket identifier copied')));
+                },
+                icon: const Icon(Icons.copy_rounded, size: 18),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 14),
+          Row(children: [
+            Expanded(
+              child: _SheetAction(
+                icon: Icons.swap_horiz_rounded,
+                label: 'Transfer',
+                color: _C.primary,
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  onNavigate('/wallet/transact');
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _SheetAction(
+                icon: Icons.add_rounded,
+                label: 'Add money',
+                color: _C.green,
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  onNavigate('/wallet/transact');
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _SheetAction(
+                icon: Icons.pie_chart_outline_rounded,
+                label: 'Budget',
+                color: const Color(0xFF7C3AED),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  onNavigate('/wallet/budget');
+                },
+              ),
+            ),
+          ]),
+          const SizedBox(height: 12),
+          const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(Icons.swipe_rounded, color: _C.grey, size: 16),
+            SizedBox(width: 6),
+            Text('Swipe the cards to see your other pockets',
+                style: TextStyle(color: _C.grey, fontSize: 11)),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  void _goToCard(int index) {
+    if (index < 0 || index >= pockets.length) return;
+    HapticFeedback.selectionClick();
+    pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -513,59 +695,64 @@ class _PocketContent extends StatelessWidget {
         showAllTx ? pocket.transactions : pocket.transactions.take(3).toList();
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _WalletOverview(
+        earnings: gudeEarnings,
+        points: gudePoints,
+        planningBalance: planningBalance,
+        onEditPlan: onEditPlanningBalance,
+      ),
       // ── Card carousel ─────────────────────────────────
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
         child: SizedBox(
           height: 180,
           child: Stack(children: [
-            PageView.builder(
-              controller: pageController,
-              onPageChanged: onPageChanged,
-              itemCount: pockets.length,
-              itemBuilder: (context, index) => Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: _PocketCard(
-                    pocket: pockets[index],
-                    balVisible: balVisible,
-                    onToggle: onToggleBal),
+            ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(
+                dragDevices: const {
+                  PointerDeviceKind.touch,
+                  PointerDeviceKind.mouse,
+                  PointerDeviceKind.stylus,
+                  PointerDeviceKind.trackpad,
+                },
+                overscroll: false,
+              ),
+              child: PageView.builder(
+                controller: pageController,
+                onPageChanged: onPageChanged,
+                physics: const PageScrollPhysics(
+                    parent: BouncingScrollPhysics()),
+                dragStartBehavior: DragStartBehavior.start,
+                itemCount: pockets.length,
+                itemBuilder: (context, index) => Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.deferToChild,
+                    onTap: () => _showPocketDetails(context, pockets[index]),
+                    child: _PocketCard(
+                        pocket: pockets[index],
+                        balVisible: balVisible,
+                        onToggle: onToggleBal),
+                  ),
+                ),
               ),
             ),
-            if (!pocket.isMainAccount)
+            if (currentIndex > 0)
               Positioned(
-                left: -20,
-                top: 0,
-                bottom: 0,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: GestureDetector(
-                    onTap: () => HapticFeedback.lightImpact(),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 8),
-                      decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 8,
-                                offset: const Offset(2, 2))
-                          ]),
-                      child: const Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.add_card_rounded,
-                                color: _C.primary, size: 10),
-                            SizedBox(height: 4),
-                            Text('Add card',
-                                style: TextStyle(
-                                    fontSize: 7,
-                                    fontWeight: FontWeight.w600,
-                                    color: _C.dark)),
-                          ]),
-                    ),
-                  ),
+                left: 5,
+                top: 70,
+                child: _CardArrow(
+                  icon: Icons.chevron_left_rounded,
+                  onTap: () => _goToCard(currentIndex - 1),
+                ),
+              ),
+            if (currentIndex < pockets.length - 1)
+              Positioned(
+                right: 5,
+                top: 70,
+                child: _CardArrow(
+                  icon: Icons.chevron_right_rounded,
+                  onTap: () => _goToCard(currentIndex + 1),
                 ),
               ),
           ]),
@@ -596,6 +783,8 @@ class _PocketContent extends StatelessWidget {
             ),
           ],
           const Spacer(),
+          const Icon(Icons.swipe_rounded, size: 15, color: _C.grey),
+          const SizedBox(width: 5),
           Text('${currentIndex + 1} / ${pockets.length}',
               style: const TextStyle(fontSize: 11, color: _C.grey)),
         ]),
@@ -783,6 +972,190 @@ class _PocketContent extends StatelessWidget {
 // ════════════════════════════════════════════════════════════════
 //  Pocket Card
 // ════════════════════════════════════════════════════════════════
+class _CardArrow extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _CardArrow({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => Material(
+        color: Colors.white.withOpacity(0.92),
+        shape: const CircleBorder(),
+        elevation: 3,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: Padding(
+            padding: const EdgeInsets.all(5),
+            child: Icon(icon, color: _C.primary, size: 22),
+          ),
+        ),
+      );
+}
+
+class _SheetAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  const _SheetAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.09),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: color.withOpacity(0.18)),
+          ),
+          child: Column(children: [
+            Icon(icon, color: color, size: 21),
+            const SizedBox(height: 5),
+            Text(label,
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+          ]),
+        ),
+      );
+}
+
+class _WalletOverview extends StatelessWidget {
+  final double earnings, planningBalance;
+  final int points;
+  final VoidCallback onEditPlan;
+
+  const _WalletOverview({
+    required this.earnings,
+    required this.points,
+    required this.planningBalance,
+    required this.onEditPlan,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFFFDDE0)),
+        boxShadow: [
+          BoxShadow(color: _C.primary.withOpacity(0.06), blurRadius: 16)
+        ],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Row(children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: Color(0xFFFFECEE),
+            child: Icon(Icons.wallet_rounded, color: _C.primary, size: 19),
+          ),
+          SizedBox(width: 10),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Your money, organised',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+              Text('Swipe pocket cards below to manage each purpose',
+                  style: TextStyle(color: _C.grey, fontSize: 11)),
+            ]),
+          ),
+        ]),
+        const SizedBox(height: 14),
+        Row(children: [
+          Expanded(
+            child: _OverviewTile(
+              icon: Icons.storefront_rounded,
+              color: _C.primary,
+              label: 'Gude earnings',
+              value: 'R${earnings.toStringAsFixed(2)}',
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _OverviewTile(
+              icon: Icons.stars_rounded,
+              color: const Color(0xFFF59E0B),
+              label: 'Gude Points',
+              value: '$points pts',
+            ),
+          ),
+        ]),
+        const SizedBox(height: 10),
+        InkWell(
+          onTap: onEditPlan,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF2EDFF),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(children: [
+              const Icon(Icons.auto_graph_rounded,
+                  color: Color(0xFF7C3AED), size: 21),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Planning Wallet',
+                      style: TextStyle(fontWeight: FontWeight.w800)),
+                  Text('Simulation only - never changes spendable money',
+                      style: TextStyle(color: _C.grey, fontSize: 10)),
+                ]),
+              ),
+              Text('R${planningBalance.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                      color: Color(0xFF7C3AED), fontWeight: FontWeight.w900)),
+              const SizedBox(width: 4),
+              const Icon(Icons.edit_outlined, color: Color(0xFF7C3AED), size: 16),
+            ]),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+class _OverviewTile extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label, value;
+  const _OverviewTile({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(11),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(13),
+        ),
+        child: Row(children: [
+          Icon(icon, color: color, size: 19),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(label, style: const TextStyle(color: _C.grey, fontSize: 10)),
+              Text(value,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
+            ]),
+          ),
+        ]),
+      );
+}
+
 class _PocketCard extends StatelessWidget {
   final _PocketUI pocket;
   final bool balVisible;
@@ -896,8 +1269,7 @@ class _PocketCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(4)),
                 child: CustomPaint(painter: _ChipPainter())),
             const Spacer(),
-            if (pocket.isMainAccount)
-              Padding(
+            Padding(
                   padding: const EdgeInsets.only(bottom: 3),
                   child: Text(
                       balVisible

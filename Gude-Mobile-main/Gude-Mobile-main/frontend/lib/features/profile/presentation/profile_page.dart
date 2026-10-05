@@ -9,6 +9,7 @@ import 'package:gude_app/core/theme/app_theme.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:gude_app/services/user_role_service.dart';
 
 // ─────────────────────────────────────────────
 // CONSTANTS
@@ -728,13 +729,15 @@ class _ProfilePageState extends State<ProfilePage>
   Widget build(BuildContext context) {
     final percent = _completionPercent;
     final isComplete = percent >= 100;
+    final savedName = UserRoleService().userName.trim();
+    final displayName = savedName.isEmpty ? 'Student Profile' : savedName;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F5F7),
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverAppBar(
-            expandedHeight: 140,
+            expandedHeight: 92,
             pinned: true,
             forceElevated: innerBoxIsScrolled,
             backgroundColor: AppColors.primary,
@@ -782,9 +785,9 @@ class _ProfilePageState extends State<ProfilePage>
             children: [
               // ── Profile header card ─────────
               Transform.translate(
-                offset: const Offset(0, -28),
+                offset: Offset.zero,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -886,8 +889,8 @@ class _ProfilePageState extends State<ProfilePage>
                           const SizedBox(height: 14),
 
                           // Name
-                          const Text('Student Name',
-                              style: TextStyle(
+                          Text(displayName,
+                              style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w800,
                                   color: Color(0xFF1A1A1A))),
@@ -1029,6 +1032,38 @@ class _ProfilePageState extends State<ProfilePage>
                     ),
                   ),
                 ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                child: Row(children: [
+                  Expanded(
+                    child: _ProfileQuickAction(
+                      icon: Icons.storefront_outlined,
+                      label: 'My listings',
+                      color: AppColors.primary,
+                      onTap: () => context.push('/marketplace/jobs'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _ProfileQuickAction(
+                      icon: Icons.favorite_outline_rounded,
+                      label: 'Saved',
+                      color: const Color(0xFFEC4899),
+                      onTap: () => context.push('/wishlist'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _ProfileQuickAction(
+                      icon: Icons.chat_bubble_outline_rounded,
+                      label: 'Messages',
+                      color: const Color(0xFF3B82F6),
+                      onTap: () => context.push('/messages'),
+                    ),
+                  ),
+                ]),
               ),
 
               // ── Profile completion banner ───
@@ -1364,6 +1399,45 @@ class _ProfilePageState extends State<ProfilePage>
 // ─────────────────────────────────────────────
 // COMPLETION STEP MODEL
 // ─────────────────────────────────────────────
+
+class _ProfileQuickAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ProfileQuickAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 6),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: color.withOpacity(0.18)),
+          ),
+          child: Column(children: [
+            Icon(icon, color: color, size: 21),
+            const SizedBox(height: 6),
+            Text(label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF333333))),
+          ]),
+        ),
+      );
+}
 
 class _CompletionStep {
   final String label;

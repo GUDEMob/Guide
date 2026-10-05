@@ -411,7 +411,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                   ),
                 ],
 
-                const SizedBox(height: 100),
+                const SizedBox(height: 24),
               ],
             ),
           ),
