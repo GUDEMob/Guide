@@ -8,6 +8,7 @@ class UserRoleService {
   String _institutionId = '';
   String _institutionName = '';
   String _userType = 'student'; // student, institution, buyer
+  String _organisationType = 'university';
   String _userName = ''; // stores full name from registration
 
   // Onboarding questionnaire answers
@@ -30,6 +31,9 @@ class UserRoleService {
   String get userType => _userType;
   set userType(String value) => _userType = value;
 
+  String get organisationType => _organisationType;
+  set organisationType(String value) => _organisationType = value;
+
   String get userName => _userName;
   set userName(String value) => _userName = value;
 
@@ -48,6 +52,9 @@ class UserRoleService {
 
   // Convenience booleans
   bool get isInstitution => _userType == 'institution';
+  bool get isAccommodationProvider =>
+      isInstitution && _organisationType == 'accommodation';
+  bool get isPshaAdmin => isInstitution && _organisationType == 'psha';
   bool get isStudent => _userType == 'student';
   bool get isBuyer => _userType == 'buyer';
 
@@ -60,6 +67,7 @@ class UserRoleService {
     _institutionId = '';
     _institutionName = '';
     _userType = 'student';
+    _organisationType = 'university';
     _userName = '';
     _fundingType = '';
     _monthlyIncome = 0;

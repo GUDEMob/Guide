@@ -207,6 +207,9 @@ class _InstitutionMarketplacePageState
                       sources: _sources.length,
                       posts: _postCount,
                       alerts: alerts.length,
+                      onPartnersTap: () => _showAllPartners(),
+                      onPostsTap: () => _showAllPosts(),
+                      onAlertsTap: () => _showAlerts(alerts),
                     ),
                     const SizedBox(height: 16),
                     _AlertStrip(alerts: alerts, onTap: _showAlertDetail),
@@ -310,6 +313,36 @@ class _InstitutionMarketplacePageState
   void _showAlertDetail(InstituteAlert alert) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${alert.source}: ${alert.title}')),
+    );
+  }
+
+  void _showAllPartners() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _PartnersSheet(
+        sources: _sources,
+        onOpenPosts: (source) {
+          Navigator.pop(context);
+          _showPosts(source);
+        },
+      ),
+    );
+  }
+
+  void _showAllPosts() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _AllPostsSheet(sources: _sources),
     );
   }
 
@@ -701,11 +734,17 @@ class _SummaryBand extends StatelessWidget {
   final int sources;
   final int posts;
   final int alerts;
+  final VoidCallback onPartnersTap;
+  final VoidCallback onPostsTap;
+  final VoidCallback onAlertsTap;
 
   const _SummaryBand({
     required this.sources,
     required this.posts,
     required this.alerts,
+    required this.onPartnersTap,
+    required this.onPostsTap,
+    required this.onAlertsTap,
   });
 
   @override
@@ -729,11 +768,26 @@ class _SummaryBand extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _Metric(label: 'Partners', value: '$sources'),
+          _Metric(
+            label: 'Partners',
+            value: '$sources',
+            icon: Icons.business_rounded,
+            onTap: onPartnersTap,
+          ),
           const SizedBox(width: 10),
-          _Metric(label: 'Job posts', value: '$posts'),
+          _Metric(
+            label: 'Job posts',
+            value: '$posts',
+            icon: Icons.work_rounded,
+            onTap: onPostsTap,
+          ),
           const SizedBox(width: 10),
-          _Metric(label: 'Alerts', value: '$alerts'),
+          _Metric(
+            label: 'Alerts',
+            value: '$alerts',
+            icon: Icons.notifications_active_rounded,
+            onTap: onAlertsTap,
+          ),
         ],
       ),
     );
@@ -743,43 +797,268 @@ class _SummaryBand extends StatelessWidget {
 class _Metric extends StatelessWidget {
   final String label;
   final String value;
+  final IconData icon;
+  final VoidCallback onTap;
 
-  const _Metric({required this.label, required this.value});
+  const _Metric({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.12),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 19,
-                fontWeight: FontWeight.w900,
-              ),
+          child: Ink(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
             ),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.74),
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        value,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 19,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    Icon(icon, color: Colors.white, size: 15),
+                  ],
+                ),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.74),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+class _PartnersSheet extends StatelessWidget {
+  final List<OpportunitySource> sources;
+  final ValueChanged<OpportunitySource> onOpenPosts;
+
+  const _PartnersSheet({
+    required this.sources,
+    required this.onOpenPosts,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.72,
+      minChildSize: 0.45,
+      maxChildSize: 0.92,
+      builder: (_, scrollController) {
+        return SafeArea(
+          top: false,
+          child: ListView(
+            controller: scrollController,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+            children: [
+              const _SheetHandle(),
+              const SizedBox(height: 16),
+              const Text(
+                'Partners',
+                style: TextStyle(
+                  color: _C.ink,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${sources.length} institutions, banks, companies and organisations',
+                style: const TextStyle(color: _C.muted, fontSize: 12),
+              ),
+              const SizedBox(height: 14),
+              for (final source in sources) ...[
+                _PartnerRow(
+                  source: source,
+                  onOpenPosts: () => onOpenPosts(source),
+                ),
+                const SizedBox(height: 10),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PartnerRow extends StatelessWidget {
+  final OpportunitySource source;
+  final VoidCallback onOpenPosts;
+
+  const _PartnerRow({
+    required this.source,
+    required this.onOpenPosts,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _C.canvas,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _C.line),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: source.color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Icon(source.icon, color: source.color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  source.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _C.ink,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '${source.type} - ${source.location}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _C.muted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    _MiniPill(
+                      label: '${source.posts.length} posts',
+                      color: source.color,
+                    ),
+                    _MiniPill(label: source.type, color: _C.muted),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton.filledTonal(
+            tooltip: 'Open posts',
+            onPressed: onOpenPosts,
+            icon: const Icon(Icons.chevron_right_rounded),
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: _C.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AllPostsSheet extends StatelessWidget {
+  final List<OpportunitySource> sources;
+
+  const _AllPostsSheet({required this.sources});
+
+  @override
+  Widget build(BuildContext context) {
+    final allPosts = [
+      for (final source in sources)
+        for (final post in source.posts) (source: source, post: post),
+    ];
+
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.76,
+      minChildSize: 0.45,
+      maxChildSize: 0.92,
+      builder: (_, scrollController) {
+        return SafeArea(
+          top: false,
+          child: ListView(
+            controller: scrollController,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+            children: [
+              const _SheetHandle(),
+              const SizedBox(height: 16),
+              const Text(
+                'All job posts',
+                style: TextStyle(
+                  color: _C.ink,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${allPosts.length} opportunities across partners',
+                style: const TextStyle(color: _C.muted, fontSize: 12),
+              ),
+              const SizedBox(height: 14),
+              for (final item in allPosts) ...[
+                Text(
+                  item.source.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _C.muted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                _PostDetail(post: item.post),
+                const SizedBox(height: 12),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }

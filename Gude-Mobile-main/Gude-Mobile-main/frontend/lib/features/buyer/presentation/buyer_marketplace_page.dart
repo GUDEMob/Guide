@@ -866,17 +866,16 @@ class _PromoBanner extends StatelessWidget {
           colors: [
             _BuyerColors.primary,
             _BuyerColors.primary,
-            _BuyerColors.blue,
-            _BuyerColors.sky,
+            _BuyerColors.primaryDark,
           ],
-          stops: [0, 0.42, 0.78, 1],
+          stops: [0, 0.58, 1],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: _BuyerColors.blue.withValues(alpha: 0.22),
+            color: _BuyerColors.primary.withValues(alpha: 0.24),
             blurRadius: 18,
             offset: const Offset(0, 10),
           ),
@@ -955,7 +954,7 @@ class _PromoBanner extends StatelessWidget {
                     label: const Text('Shop now'),
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.white,
-                      foregroundColor: _BuyerColors.blue,
+                      foregroundColor: _BuyerColors.primary,
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       textStyle: const TextStyle(
                         fontSize: 12,

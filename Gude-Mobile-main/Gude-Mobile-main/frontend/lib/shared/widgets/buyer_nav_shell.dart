@@ -28,7 +28,7 @@ class BuyerNavShell extends StatelessWidget {
   ];
 
   static const _primary = Color(0xFFE50914);
-  static const _blue = Color(0xFF2563EB);
+  static const _redDark = Color(0xFFB0000E);
   static const _ink = Color(0xFF111827);
   static const _muted = Color(0xFF8791A3);
   static const _line = Color(0xFFDCE7FF);
@@ -76,7 +76,7 @@ class BuyerNavShell extends StatelessWidget {
                           color: selected ? null : Colors.transparent,
                           gradient: selected
                               ? const LinearGradient(
-                                  colors: [_primary, _blue],
+                                  colors: [_primary, _redDark],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 )

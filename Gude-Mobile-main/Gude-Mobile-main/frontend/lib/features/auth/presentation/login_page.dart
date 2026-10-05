@@ -31,9 +31,11 @@ class _LoginPageState extends State<LoginPage> {
   bool _rememberMe = false;
   bool _emailError = false;
   bool _passwordError = false;
+  bool _institutionNameError = false;
   String? _emailValidationError;
   String _role = 'student';
   String _userType = 'student';
+  String _organisationType = 'university';
 
   bool _isValidStudentEmail(String email) {
     final re = RegExp(r'^[^@]+@[^@]+\.(ac\.za|edu\.za)$', caseSensitive: false);
@@ -45,10 +47,16 @@ class _LoginPageState extends State<LoginPage> {
     return re.hasMatch(email.trim());
   }
 
+  bool _isValidEmail(String email) {
+    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email.trim());
+  }
+
   void _login() {
     setState(() {
       _emailError = _email.text.trim().isEmpty;
       _passwordError = _password.text.isEmpty;
+      _institutionNameError =
+          _userType == 'institution' && _institutionCode.text.trim().isEmpty;
       _emailValidationError = null;
 
       if (_userType == 'student' && !_emailError) {
@@ -58,22 +66,31 @@ class _LoginPageState extends State<LoginPage> {
           _emailError = true;
         }
       } else if (_userType == 'institution' && !_emailError) {
-        if (!_isValidInstitutionEmail(_email.text)) {
-          _emailValidationError =
-              'Use your institution email ending in .ac.za or .edu.za';
+        final valid = _organisationType == 'university'
+            ? _isValidInstitutionEmail(_email.text)
+            : _isValidEmail(_email.text);
+        if (!valid) {
+          _emailValidationError = _organisationType == 'university'
+              ? 'Use your institution email ending in .ac.za or .edu.za'
+              : 'Enter a valid organisation email address';
           _emailError = true;
         }
       }
     });
 
-    if (!_emailError && !_passwordError) {
+    if (!_emailError && !_passwordError && !_institutionNameError) {
       final userService = UserRoleService();
       userService.userType = _userType;
       userService.role = _role;
 
       if (_userType == 'institution') {
         userService.institutionName = _institutionCode.text.trim();
-        context.go('/institution/marketplace');
+        userService.organisationType = _organisationType;
+        context.go(switch (_organisationType) {
+          'accommodation' => '/accommodation/overview',
+          'psha' => '/psha/overview',
+          _ => '/institution/marketplace',
+        });
       } else if (_userType == 'buyer') {
         context.go('/buyer/marketplace');
       } else {
@@ -102,7 +119,11 @@ class _LoginPageState extends State<LoginPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _HeroSection(role: _role, userType: _userType),
+            _HeroSection(
+              role: _role,
+              userType: _userType,
+              organisationType: _organisationType,
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
               child: Form(
@@ -125,6 +146,16 @@ class _LoginPageState extends State<LoginPage> {
                         _clearEmailErrors();
                       },
                     ),
+                    if (_userType == 'institution') ...[
+                      const SizedBox(height: 14),
+                      _OrganisationTypeSelector(
+                        selected: _organisationType,
+                        onChanged: (value) => setState(() {
+                          _organisationType = value;
+                          _clearEmailErrors();
+                        }),
+                      ),
+                    ],
                     const SizedBox(height: 22),
                     const Text(
                       'Login',
@@ -153,15 +184,31 @@ class _LoginPageState extends State<LoginPage> {
                       _ErrorText(_emailValidationError ?? 'Email is required'),
                     const SizedBox(height: 14),
                     if (_userType == 'institution') ...[
-                      _label('Institution Name'),
+                      _label(switch (_organisationType) {
+                        'accommodation' => 'Accommodation Provider Name',
+                        'psha' => 'Association Name',
+                        _ => 'Institution Name',
+                      }),
                       const SizedBox(height: 6),
                       _InputField(
                         controller: _institutionCode,
-                        hint: 'e.g. University of Cape Town',
-                        prefixIcon: Icons.business_outlined,
-                        hasError: false,
-                        onChanged: () {},
+                        hint: switch (_organisationType) {
+                          'accommodation' => 'e.g. Urban Student Living',
+                          'psha' => 'Private Student Housing Association',
+                          _ => 'e.g. University of Cape Town',
+                        },
+                        prefixIcon: switch (_organisationType) {
+                          'accommodation' => Icons.apartment_outlined,
+                          'psha' => Icons.hub_outlined,
+                          _ => Icons.business_outlined,
+                        },
+                        hasError: _institutionNameError,
+                        onChanged: () => setState(
+                          () => _institutionNameError = false,
+                        ),
                       ),
+                      if (_institutionNameError)
+                        const _ErrorText('Organisation name is required'),
                       const SizedBox(height: 14),
                     ],
                     Row(
@@ -226,7 +273,11 @@ class _LoginPageState extends State<LoginPage> {
                         onPressed: _login,
                         child: Text(
                           _userType == 'institution'
-                              ? 'Log in as Institution'
+                              ? switch (_organisationType) {
+                                  'accommodation' => 'Open Provider Workspace',
+                                  'psha' => 'Open PSHA Admin',
+                                  _ => 'Log in as Institution',
+                                }
                               : _userType == 'buyer'
                                   ? 'Log in as Buyer'
                                   : 'Log in as Student',
@@ -300,7 +351,12 @@ class _LoginPageState extends State<LoginPage> {
 class _HeroSection extends StatelessWidget {
   final String role;
   final String userType;
-  const _HeroSection({required this.role, required this.userType});
+  final String organisationType;
+  const _HeroSection({
+    required this.role,
+    required this.userType,
+    required this.organisationType,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -369,7 +425,13 @@ class _HeroSection extends StatelessWidget {
                         const SizedBox(height: 6),
                         Text(
                           userType == 'institution'
-                              ? 'Post jobs and find talented students.'
+                              ? switch (organisationType) {
+                                  'accommodation' =>
+                                    'Support residents, create work and measure engagement.',
+                                  'psha' =>
+                                    'Manage member buildings and measure sector impact.',
+                                  _ => 'Post jobs and find talented students.',
+                                }
                               : userType == 'buyer'
                                   ? 'Access services from talented students.'
                                   : 'You\'re one step away from unlocking\nthe key to a better student life.',
@@ -400,6 +462,59 @@ class _HeroSection extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _OrganisationTypeSelector extends StatelessWidget {
+  final String selected;
+  final ValueChanged<String> onChanged;
+
+  const _OrganisationTypeSelector({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Organisation type',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: _C.grey,
+          ),
+        ),
+        const SizedBox(height: 7),
+        SegmentedButton<String>(
+          segments: const [
+            ButtonSegment(
+              value: 'university',
+              icon: Icon(Icons.account_balance_outlined),
+              label: Text('University'),
+            ),
+            ButtonSegment(
+              value: 'accommodation',
+              icon: Icon(Icons.apartment_outlined),
+              label: Text('Housing'),
+            ),
+            ButtonSegment(
+              value: 'psha',
+              icon: Icon(Icons.hub_outlined),
+              label: Text('PSHA'),
+            ),
+          ],
+          selected: {selected},
+          onSelectionChanged: (values) => onChanged(values.first),
+          showSelectedIcon: false,
+          style: const ButtonStyle(
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+      ],
     );
   }
 }

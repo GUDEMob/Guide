@@ -68,11 +68,22 @@ import 'package:gude_app/features/buyer/presentation/buyer_profile_page.dart';
 import 'package:gude_app/features/institution/presentation/institution_marketplace_page.dart';
 import 'package:gude_app/features/institution/presentation/institution_profile_page.dart';
 import 'package:gude_app/features/institution/presentation/institution_talent_page.dart';
+import 'package:gude_app/features/accommodation/presentation/accommodation_overview_page.dart';
+import 'package:gude_app/features/accommodation/presentation/accommodation_community_page.dart';
+import 'package:gude_app/features/accommodation/presentation/accommodation_opportunities_page.dart';
+import 'package:gude_app/features/accommodation/presentation/accommodation_profile_page.dart';
+import 'package:gude_app/features/psha/presentation/psha_overview_page.dart';
+import 'package:gude_app/features/psha/presentation/psha_members_page.dart';
+import 'package:gude_app/features/psha/presentation/psha_impact_page.dart';
+import 'package:gude_app/features/psha/presentation/psha_profile_page.dart';
 
 // Shared Shells
 import 'package:gude_app/shared/widgets/bottom_nav_shell.dart';
 import 'package:gude_app/shared/widgets/institution_nav_shell.dart';
 import 'package:gude_app/shared/widgets/buyer_nav_shell.dart';
+import 'package:gude_app/shared/widgets/accommodation_nav_shell.dart';
+import 'package:gude_app/shared/widgets/psha_nav_shell.dart';
+import 'package:gude_app/services/user_role_service.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -249,6 +260,46 @@ class AppRouter {
       ),
 
       // ── Buyer Shell ────────────────────────────────────────────────
+      // Accommodation provider workspace.
+      ShellRoute(
+        builder: (context, state, child) => AccommodationNavShell(child: child),
+        routes: [
+          GoRoute(
+              path: '/accommodation/overview',
+              builder: (c, s) => const AccommodationOverviewPage()),
+          GoRoute(
+              path: '/accommodation/community',
+              builder: (c, s) => const AccommodationCommunityPage()),
+          GoRoute(
+              path: '/accommodation/opportunities',
+              builder: (c, s) => const AccommodationOpportunitiesPage()),
+          GoRoute(
+              path: '/accommodation/profile',
+              builder: (c, s) => const AccommodationProfilePage()),
+        ],
+      ),
+
+      // PSHA network administration workspace.
+      ShellRoute(
+        builder: (context, state, child) => PshaNavShell(child: child),
+        redirect: (context, state) =>
+            UserRoleService().isPshaAdmin ? null : '/login',
+        routes: [
+          GoRoute(
+              path: '/psha/overview',
+              builder: (c, s) => const PshaOverviewPage()),
+          GoRoute(
+              path: '/psha/members',
+              builder: (c, s) => const PshaMembersPage()),
+          GoRoute(
+              path: '/psha/impact', builder: (c, s) => const PshaImpactPage()),
+          GoRoute(
+              path: '/psha/profile',
+              builder: (c, s) => const PshaProfilePage()),
+        ],
+      ),
+
+      // Buyer workspace.
       ShellRoute(
         builder: (_, __, child) => BuyerNavShell(child: child),
         routes: [

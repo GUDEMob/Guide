@@ -25,6 +25,7 @@ class SignupPage extends StatefulWidget {
 
 class _SignupPageState extends State<SignupPage> {
   String _userType = ''; // 'student', 'institution', 'buyer'
+  String _organisationType = 'university';
   final _pageCtrl = PageController();
 
   final _formKey = GlobalKey<FormState>();
@@ -77,7 +78,10 @@ class _SignupPageState extends State<SignupPage> {
     if (_userType == 'institution') {
       userService.institutionName = _institutionName.text.trim();
       userService.role = 'institution';
-      context.go('/institution/marketplace');
+      userService.organisationType = _organisationType;
+      context.go(_organisationType == 'accommodation'
+          ? '/accommodation/overview'
+          : '/institution/marketplace');
     } else if (_userType == 'buyer') {
       userService.role = 'buyer';
       context.go('/buyer-onboarding/welcome');
@@ -142,7 +146,7 @@ class _SignupPageState extends State<SignupPage> {
 
   String? _validateInstitutionName(String? v) {
     if (_userType == 'institution') {
-      if (v == null || v.isEmpty) return 'Institution name is required';
+      if (v == null || v.isEmpty) return 'Organisation name is required';
     }
     return null;
   }
@@ -172,10 +176,13 @@ class _SignupPageState extends State<SignupPage> {
         return 'Use your official student email (.ac.za or .edu.za)';
       }
     } else if (_userType == 'institution') {
-      final re =
-          RegExp(r'^[^@]+@[^@]+\.(ac\.za|edu\.za)$', caseSensitive: false);
+      final re = _organisationType == 'accommodation'
+          ? RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+          : RegExp(r'^[^@]+@[^@]+\.(ac\.za|edu\.za)$', caseSensitive: false);
       if (!re.hasMatch(v)) {
-        return 'Use your institution email ending in .ac.za or .edu.za';
+        return _organisationType == 'accommodation'
+            ? 'Enter a valid organisation email address'
+            : 'Use your institution email ending in .ac.za or .edu.za';
       }
     } else {
       final re = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
@@ -209,6 +216,7 @@ class _SignupPageState extends State<SignupPage> {
           ),
           _FormPage(
             userType: _userType,
+            organisationType: _organisationType,
             formKey: _formKey,
             name: _name,
             email: _email,
@@ -230,6 +238,10 @@ class _SignupPageState extends State<SignupPage> {
             onInstitutionChanged: (v) => setState(() {
               _selectedInstitution = v;
               _showCustomInput = v == 'Other (type below)';
+              _email.clear();
+            }),
+            onOrganisationTypeChanged: (value) => setState(() {
+              _organisationType = value;
               _email.clear();
             }),
             validateName: _validateName,
@@ -621,6 +633,7 @@ class _PreviewData {
 
 class _FormPage extends StatelessWidget {
   final String userType;
+  final String organisationType;
   final GlobalKey<FormState> formKey;
   final TextEditingController name,
       email,
@@ -640,6 +653,7 @@ class _FormPage extends StatelessWidget {
       onSubmit,
       onLogin;
   final void Function(String?) onInstitutionChanged;
+  final ValueChanged<String> onOrganisationTypeChanged;
   final String? Function(String?) validateName,
       validateInstitutionName,
       validateRegistrationNumber,
@@ -649,6 +663,7 @@ class _FormPage extends StatelessWidget {
 
   const _FormPage({
     required this.userType,
+    required this.organisationType,
     required this.formKey,
     required this.name,
     required this.email,
@@ -670,6 +685,7 @@ class _FormPage extends StatelessWidget {
     required this.onSubmit,
     required this.onLogin,
     required this.onInstitutionChanged,
+    required this.onOrganisationTypeChanged,
     required this.validateName,
     required this.validateInstitutionName,
     required this.validateRegistrationNumber,
@@ -688,7 +704,9 @@ class _FormPage extends StatelessWidget {
             ? 'studentnumber@$domain'
             : 'studentnumber@university.ac.za')
         : isInstitution
-            ? 'institution@domain.ac.za'
+            ? organisationType == 'accommodation'
+                ? 'manager@provider.co.za'
+                : 'institution@domain.ac.za'
             : 'your@email.com';
 
     return SingleChildScrollView(
@@ -699,7 +717,9 @@ class _FormPage extends StatelessWidget {
             subtitle: isStudent
                 ? 'Create your student account to get started.'
                 : isInstitution
-                    ? 'Create your institution account to post jobs.'
+                    ? organisationType == 'accommodation'
+                        ? 'Create your provider account to support residents.'
+                        : 'Create your institution account to post jobs.'
                     : 'Create your buyer account to get started.',
             illustration: isStudent
                 ? '🎓'
@@ -751,12 +771,39 @@ class _FormPage extends StatelessWidget {
 
                   // Institution-specific fields
                   if (isInstitution) ...[
-                    _label('Institution Name *'),
+                    _label('Organisation type'),
+                    const SizedBox(height: 7),
+                    SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment(
+                          value: 'university',
+                          icon: Icon(Icons.account_balance_outlined),
+                          label: Text('University'),
+                        ),
+                        ButtonSegment(
+                          value: 'accommodation',
+                          icon: Icon(Icons.apartment_outlined),
+                          label: Text('Accommodation'),
+                        ),
+                      ],
+                      selected: {organisationType},
+                      onSelectionChanged: (values) =>
+                          onOrganisationTypeChanged(values.first),
+                      showSelectedIcon: false,
+                    ),
+                    const SizedBox(height: 14),
+                    _label(organisationType == 'accommodation'
+                        ? 'Accommodation Provider Name *'
+                        : 'Institution Name *'),
                     const SizedBox(height: 6),
                     _inputField(
                       controller: institutionName,
-                      hint: 'e.g. University of Cape Town',
-                      icon: Icons.business_outlined,
+                      hint: organisationType == 'accommodation'
+                          ? 'e.g. Urban Student Living'
+                          : 'e.g. University of Cape Town',
+                      icon: organisationType == 'accommodation'
+                          ? Icons.apartment_outlined
+                          : Icons.business_outlined,
                       validator: validateInstitutionName,
                       capitalization: TextCapitalization.words,
                     ),
@@ -907,7 +954,9 @@ class _FormPage extends StatelessWidget {
                         isStudent
                             ? 'Create Student Account'
                             : isInstitution
-                                ? 'Create Institution Account'
+                                ? organisationType == 'accommodation'
+                                    ? 'Create Provider Account'
+                                    : 'Create Institution Account'
                                 : 'Create Buyer Account',
                         style: const TextStyle(
                             fontSize: 15, fontWeight: FontWeight.w700),
