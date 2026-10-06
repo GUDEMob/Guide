@@ -127,6 +127,7 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: Colors.transparent,
       builder: (_) => _AddExpenseSheet(
         onSave: (amount, category, note) {
+          _walletService.logExpense(amount, category, note);
           _walletService.awardGudePoints(
             10,
             'Logged an expense',
@@ -158,7 +159,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF7F8),
+      backgroundColor: const Color(0xFFFFFBFB),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'aibuddy',
         backgroundColor: AppColors.primary,
@@ -175,15 +176,15 @@ class _HomePageState extends State<HomePage> {
           // ── App bar ────────────────────────────────────────
           SliverAppBar(
             floating: true,
-            backgroundColor: AppColors.primary,
+            backgroundColor: Colors.white,
             elevation: 0,
             title: Row(children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 44,
+                height: 44,
                 padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: const Color(0xFFFFF2F3),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: ClipRRect(
@@ -200,19 +201,17 @@ class _HomePageState extends State<HomePage> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('WELCOME BACK',
+                    const Text('GUDE',
                         style: TextStyle(
                             fontSize: 9,
                             letterSpacing: 1.1,
-                            color: Colors.white70,
+                            color: AppColors.primary,
                             fontWeight: FontWeight.w700)),
-                    Text(
-                      _greetingLine,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                    const Text(
+                      'Your campus, your moves',
+                      style: TextStyle(
                           fontSize: 15,
-                          color: Colors.white,
+                          color: AppColors.textDark,
                           fontWeight: FontWeight.w800),
                     ),
                   ],
@@ -225,7 +224,7 @@ class _HomePageState extends State<HomePage> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: _ExtraColors.amber.withOpacity(0.12),
+                  color: const Color(0xFFFFE9EC),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(children: [
@@ -239,12 +238,13 @@ class _HomePageState extends State<HomePage> {
                 ]),
               ),
               IconButton(
-                icon: const Icon(Icons.person_outline, color: Colors.white),
+                icon:
+                    const Icon(Icons.person_outline, color: AppColors.textDark),
                 onPressed: () => context.push('/profile'),
               ),
               IconButton(
                 icon: const Icon(Icons.notifications_outlined,
-                    color: Colors.white),
+                    color: AppColors.textDark),
                 onPressed: () => context.push('/notifications'),
               ),
             ],
@@ -254,30 +254,9 @@ class _HomePageState extends State<HomePage> {
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(children: [
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 14),
-                  child: Row(children: [
-                    Expanded(
-                        child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Student life, unlocked.',
-                            style: TextStyle(
-                                color: AppColors.textDark,
-                                fontSize: 23,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -0.7)),
-                        SizedBox(height: 3),
-                        Text('Earn. Save. Make your next move.',
-                            style: TextStyle(
-                                color: AppColors.textGrey, fontSize: 12)),
-                      ],
-                    )),
-                    CircleAvatar(
-                        backgroundColor: Color(0xFFFFE4E8),
-                        child:
-                            Icon(Icons.bolt_rounded, color: AppColors.primary)),
-                  ]),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: _StudentHero(greeting: _greetingLine),
                 ),
                 // ── 1. Account card ────────────────────────────
                 _HomeWalletCard(
@@ -315,6 +294,104 @@ class _HomePageState extends State<HomePage> {
       // ── FABs — all same size ───────────────────────────────
     );
   }
+}
+
+class _StudentHero extends StatelessWidget {
+  final String greeting;
+  const _StudentHero({required this.greeting});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(20, 20, 10, 18),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Colors.white, Color(0xFFFFECEF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: const Color(0xFFFFD9DE)),
+          boxShadow: const [
+            BoxShadow(
+                color: Color(0x16E30613), blurRadius: 22, offset: Offset(0, 8))
+          ],
+        ),
+        child: Row(children: [
+          Expanded(
+              child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(greeting.trim(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: AppColors.textDark,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800)),
+              const SizedBox(height: 2),
+              const Text('Student',
+                  style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 40,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -2.0,
+                      height: 1.05)),
+              const SizedBox(height: 5),
+              const Text('Student life, unlocked.',
+                  style: TextStyle(
+                      color: AppColors.textDark,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800)),
+              const SizedBox(height: 3),
+              const Text('Earn. Save. Make smarter moves.',
+                  style: TextStyle(color: AppColors.textGrey, fontSize: 11)),
+            ],
+          )),
+          const SizedBox(width: 4),
+          SizedBox(
+              width: 92,
+              height: 122,
+              child: Stack(children: [
+                Positioned(
+                    right: 0,
+                    top: 5,
+                    child: Transform.rotate(
+                      angle: 0.08,
+                      child: Container(
+                        width: 80,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                              colors: [Color(0xFFFF424E), Color(0xFFC90018)]),
+                          borderRadius: BorderRadius.circular(22),
+                          boxShadow: const [
+                            BoxShadow(
+                                color: Color(0x55E30613),
+                                blurRadius: 12,
+                                offset: Offset(0, 7))
+                          ],
+                        ),
+                        child: const Icon(Icons.backpack_rounded,
+                            color: Colors.white, size: 56),
+                      ),
+                    )),
+                const Positioned(
+                    left: 0,
+                    bottom: 2,
+                    child: CircleAvatar(
+                        radius: 17,
+                        backgroundColor: Color(0xFFFFC629),
+                        child: Icon(Icons.star_rounded,
+                            color: Colors.white, size: 23))),
+                const Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Icon(Icons.auto_awesome_rounded,
+                        color: Color(0xFFFFB900), size: 24)),
+              ])),
+        ]),
+      );
 }
 
 // ════════════════════════════════════════════════════════════
@@ -400,14 +477,14 @@ class _HomeWalletCard extends StatelessWidget {
         onTap: onTap,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [AppColors.primary, Color(0xFF9B0010)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(26),
             boxShadow: [
               BoxShadow(
                   color: AppColors.primary.withOpacity(0.20),
@@ -430,13 +507,13 @@ class _HomeWalletCard extends StatelessWidget {
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 Container(
-                  width: 34,
-                  height: 34,
+                  width: 43,
+                  height: 43,
                   decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.14),
-                      borderRadius: BorderRadius.circular(10)),
+                      borderRadius: BorderRadius.circular(14)),
                   child: const Icon(Icons.account_balance_wallet_rounded,
-                      color: Colors.white, size: 18),
+                      color: Colors.white, size: 23),
                 ),
                 const SizedBox(width: 9),
                 const Expanded(
@@ -446,14 +523,14 @@ class _HomeWalletCard extends StatelessWidget {
                         Text('Gude Wallet',
                             style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 14,
+                                fontSize: 17,
                                 fontWeight: FontWeight.w800)),
-                        Text('Marketplace earnings',
+                        Text('Your student money hub',
                             style:
                                 TextStyle(color: Colors.white70, fontSize: 10)),
                       ]),
                 ),
-                const Text('VIEW WALLET',
+                const Text('VIEW',
                     style: TextStyle(
                         color: Colors.white70,
                         fontSize: 8,
@@ -463,16 +540,23 @@ class _HomeWalletCard extends StatelessWidget {
                 const Icon(Icons.chevron_right_rounded,
                     color: Colors.white70, size: 18),
               ]),
-              const SizedBox(height: 17),
+              const SizedBox(height: 18),
+              const Text('Balance',
+                  style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600)),
+              const SizedBox(height: 2),
               Row(children: [
-                Text(
+                Flexible(
+                    child: Text(
                   visible ? 'R ${balance.toStringAsFixed(2)}' : 'R ••••••',
                   style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 30,
+                      fontSize: 34,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.8),
-                ),
+                )),
                 const SizedBox(width: 8),
                 InkWell(
                   onTap: onToggle,
@@ -522,7 +606,7 @@ class _WalletMetric extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.white.withOpacity(0.12))),
         child: Row(children: [
-          Icon(icon, color: const Color(0xFFFFD166), size: 17),
+          Icon(icon, color: const Color(0xFFFFD166), size: 20),
           const SizedBox(width: 7),
           Expanded(
             child:
@@ -719,17 +803,17 @@ class _DiscoveryChallenges extends StatelessWidget {
         const Expanded(
           child: Text('Made for you',
               style: TextStyle(
-                  fontSize: 19,
+                  fontSize: 21,
                   fontWeight: FontWeight.w900,
                   color: AppColors.textDark)),
         ),
         TextButton(onPressed: onTap, child: const Text('View all')),
       ]),
-      const Text('Small moves chosen around your student goals',
+      const Text('Small moves today. A brighter tomorrow.',
           style: TextStyle(fontSize: 11, color: AppColors.textGrey)),
       const SizedBox(height: 11),
       SizedBox(
-        height: 154,
+        height: 164,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
@@ -744,7 +828,7 @@ class _DiscoveryChallenges extends StatelessWidget {
                 padding: const EdgeInsets.all(15),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(22),
                   border: Border.all(color: color.withOpacity(0.24)),
                   boxShadow: [
                     BoxShadow(
@@ -794,15 +878,24 @@ class _DiscoveryChallenges extends StatelessWidget {
                           style: const TextStyle(
                               fontSize: 10, color: AppColors.textGrey)),
                       const Spacer(),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 6,
-                          backgroundColor: color.withOpacity(0.10),
-                          valueColor: AlwaysStoppedAnimation<Color>(color),
-                        ),
-                      ),
+                      Row(children: [
+                        Expanded(
+                            child: ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            minHeight: 7,
+                            backgroundColor: color.withOpacity(0.10),
+                            valueColor: AlwaysStoppedAnimation<Color>(color),
+                          ),
+                        )),
+                        const SizedBox(width: 10),
+                        Text('${(progress * 100).round()}%',
+                            style: TextStyle(
+                                color: color,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800)),
+                      ]),
                     ]),
               ),
             );
@@ -1013,7 +1106,7 @@ class _QuickActionsSection extends StatelessWidget {
           )
         else
           SizedBox(
-            height: 112,
+            height: 120,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
@@ -1022,7 +1115,7 @@ class _QuickActionsSection extends StatelessWidget {
               itemBuilder: (_, index) {
                 final qa = actions[index];
                 return SizedBox(
-                  width: 102,
+                  width: 108,
                   child: _QuickActionTile(
                     icon: qa.icon,
                     label: qa.label,
@@ -1060,7 +1153,7 @@ class _QuickActionTile extends StatelessWidget {
               colors: [color.withOpacity(0.17), color.withOpacity(0.04)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: color.withOpacity(0.20)),
           boxShadow: [
             BoxShadow(
@@ -1073,8 +1166,8 @@ class _QuickActionTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                   gradient:
                       LinearGradient(colors: [color, color.withOpacity(0.78)]),

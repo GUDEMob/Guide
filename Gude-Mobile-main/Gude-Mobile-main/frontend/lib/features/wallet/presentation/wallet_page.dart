@@ -1,5 +1,6 @@
 // lib/features/wallet/presentation/wallet_page.dart
 import 'package:flutter/gestures.dart';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +9,8 @@ import 'package:gude_app/services/wallet_service.dart';
 // ── Colours ─────────────────────────────────────────────────
 class _C {
   static const primary = Color(0xFF202126);
+  static const red = Color(0xFFE30613);
+  static const blue = Color(0xFF0866E9);
   static const dark = Color(0xFF1A1A1A);
   static const grey = Color(0xFF888888);
   static const lightGrey = Color(0xFFF5F5F5);
@@ -166,6 +169,13 @@ class _Cat {
   bool get isOver => spent > budget;
 }
 
+class _SpendSlice {
+  final String name;
+  final double amount;
+  final Color color;
+  const _SpendSlice(this.name, this.amount, this.color);
+}
+
 // ════════════════════════════════════════════════════════════════
 //  WalletPage
 // ════════════════════════════════════════════════════════════════
@@ -204,7 +214,8 @@ class _WalletPageState extends State<WalletPage> {
   List<_Cat> get _pocketCats {
     return _walletService.pockets.where((p) => !p.isMainAccount).map((pocket) {
       final totalSpent = pocket.transactions
-          .where((t) => !t.isCredit)
+          .where((t) =>
+              !t.isCredit && !t.label.toLowerCase().startsWith('transfer to '))
           .fold(0.0, (sum, t) => sum + t.amount);
       double budget = pocket.transactions
           .where((t) => t.isCredit)
@@ -217,6 +228,62 @@ class _WalletPageState extends State<WalletPage> {
           pocket.color,
           Icons.account_balance_wallet_outlined);
     }).toList();
+  }
+
+  List<_SpendSlice> get _spendingByCategory {
+    final now = DateTime.now();
+    bool thisMonth(DateTime date) =>
+        date.year == now.year && date.month == now.month;
+    final totals = <String, double>{};
+
+    void add(String category, double amount) {
+      if (amount > 0)
+        totals.update(category, (current) => current + amount,
+            ifAbsent: () => amount);
+    }
+
+    for (final expense in _walletService.loggedExpenses) {
+      if (thisMonth(expense.date)) add(expense.category, expense.amount);
+    }
+    for (final pocket in _walletService.pockets) {
+      for (final tx in pocket.transactions) {
+        if (tx.isCredit || !thisMonth(tx.date)) continue;
+        final label = tx.label.toLowerCase();
+        if (label.startsWith('transfer to ') ||
+            label.startsWith('returned to main account')) continue;
+        final category = label.contains('food') || label.contains('grocery')
+            ? 'Food'
+            : label.contains('transport') ||
+                    label.contains('taxi') ||
+                    label.contains('bus')
+                ? 'Transport'
+                : label.contains('data') || label.contains('airtime')
+                    ? 'Data/Airtime'
+                    : label.contains('book') || label.contains('study')
+                        ? 'Textbooks'
+                        : label.contains('entertainment')
+                            ? 'Entertainment'
+                            : 'Other';
+        add(category, tx.amount);
+      }
+    }
+
+    const colors = <String, Color>{
+      'Food': Color(0xFFE30613),
+      'Transport': Color(0xFF0866E9),
+      'Data/Airtime': Color(0xFF8255D9),
+      'Entertainment': Color(0xFFF0A400),
+      'Textbooks': Color(0xFF12A87A),
+      'Savings': Color(0xFF8F9AA8),
+      'Monthly Budget': Color(0xFF34343A),
+      'Allowance': Color(0xFFD4A017),
+      'Other': Color(0xFF6F8194),
+    };
+    return totals.entries
+        .map((e) => _SpendSlice(
+            e.key, e.value, colors[e.key] ?? const Color(0xFF4E99B7)))
+        .toList()
+      ..sort((a, b) => b.amount.compareTo(a.amount));
   }
 
   @override
@@ -469,24 +536,21 @@ class _WalletPageState extends State<WalletPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F4F6),
+      backgroundColor: const Color(0xFFFFF9F9),
       body: CustomScrollView(slivers: [
         SliverAppBar(
           pinned: true,
-          backgroundColor: _C.primary,
+          backgroundColor: Colors.white,
           elevation: 0,
           title: const Text('My Wallet',
               style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 20)),
+                  color: _C.dark, fontWeight: FontWeight.w800, fontSize: 20)),
           actions: [
             IconButton(
-                icon: const Icon(Icons.notifications_outlined,
-                    color: Colors.white),
+                icon: const Icon(Icons.notifications_outlined, color: _C.red),
                 onPressed: () => context.push('/notifications')),
             IconButton(
-                icon: const Icon(Icons.add_circle_outline, color: Colors.white),
+                icon: const Icon(Icons.add_circle_outline, color: _C.red),
                 onPressed: () => _showCreatePocketSheet(context)),
           ],
         ),
@@ -507,6 +571,7 @@ class _WalletPageState extends State<WalletPage> {
             budget: _initialBalance,
             spent: _amountSpent,
             cats: _pocketCats,
+            spending: _spendingByCategory,
             gudeEarnings: _walletService.gudeEarningsBalance,
             gudePoints: _walletService.gudePoints,
             planningBalance: _planningBalance,
@@ -533,6 +598,7 @@ class _PocketContent extends StatelessWidget {
   final Color hColor;
   final String hLabel, hEmoji;
   final List<_Cat> cats;
+  final List<_SpendSlice> spending;
   final double gudeEarnings, planningBalance;
   final int gudePoints;
   final VoidCallback onEditPlanningBalance;
@@ -555,6 +621,7 @@ class _PocketContent extends StatelessWidget {
     required this.budget,
     required this.spent,
     required this.cats,
+    required this.spending,
     required this.gudeEarnings,
     required this.gudePoints,
     required this.planningBalance,
@@ -875,52 +942,31 @@ class _PocketContent extends StatelessWidget {
       ),
 
       // ── Spending by Category ──────────────────────────
-      const Padding(
-        padding: EdgeInsets.fromLTRB(16, 18, 16, 8),
-        child: Text('Spending by Category',
-            style: TextStyle(
-                fontSize: 16, fontWeight: FontWeight.w700, color: _C.dark)),
-      ),
-      Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)
-            ]),
-        child: cats.isEmpty
-            ? InkWell(
-                onTap: () => onNavigate('/wallet/budget'),
-                borderRadius: BorderRadius.circular(12),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                  child: Row(children: [
-                    CircleAvatar(
-                      backgroundColor: Color(0xFFFFECEE),
-                      child: Icon(Icons.add_chart_rounded, color: _C.primary),
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Set up your first budget',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w700, color: _C.dark)),
-                          SizedBox(height: 2),
-                          Text('See where your money goes each month',
-                              style: TextStyle(color: _C.grey, fontSize: 11)),
-                        ],
-                      ),
-                    ),
-                    Icon(Icons.chevron_right_rounded, color: _C.primary),
-                  ]),
-                ),
-              )
-            : Column(children: cats.map((c) => _CatBar(cat: c)).toList()),
-      ),
+      _SpendingRingCard(slices: spending, visible: balVisible),
+
+      if (cats.any((cat) => cat.spent > 0)) ...[
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 18, 16, 8),
+          child: Text('Pocket breakdown',
+              style: TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.w700, color: _C.dark)),
+        ),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)
+              ]),
+          child: Column(
+              children: cats
+                  .where((cat) => cat.spent > 0)
+                  .map((cat) => _CatBar(cat: cat))
+                  .toList()),
+        ),
+      ],
 
       // ── Transactions ──────────────────────────────────
       Padding(
@@ -1049,6 +1095,145 @@ class _SheetAction extends StatelessWidget {
       );
 }
 
+class _SpendingRingCard extends StatelessWidget {
+  final List<_SpendSlice> slices;
+  final bool visible;
+  const _SpendingRingCard({required this.slices, required this.visible});
+
+  @override
+  Widget build(BuildContext context) {
+    final total = slices.fold<double>(0, (sum, slice) => sum + slice.amount);
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFFFDDE2)),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x140866E9), blurRadius: 16, offset: Offset(0, 5))
+        ],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Row(children: [
+          Icon(Icons.donut_large_rounded, color: _C.red, size: 23),
+          SizedBox(width: 9),
+          Expanded(
+              child: Text('Where your money went',
+                  style: TextStyle(
+                      color: _C.dark,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900))),
+        ]),
+        const SizedBox(height: 3),
+        const Text('This month',
+            style: TextStyle(color: _C.grey, fontSize: 11)),
+        const SizedBox(height: 16),
+        Center(
+            child: SizedBox(
+          width: 150,
+          height: 150,
+          child: CustomPaint(
+            painter: _SpendingRingPainter(slices),
+            child: Center(
+                child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(visible ? 'R ${total.toStringAsFixed(0)}' : 'R •••',
+                    style: const TextStyle(
+                        color: _C.dark,
+                        fontSize: 23,
+                        fontWeight: FontWeight.w900)),
+                const Text('spent',
+                    style: TextStyle(color: _C.grey, fontSize: 11)),
+              ],
+            )),
+          ),
+        )),
+        const SizedBox(height: 16),
+        if (slices.isEmpty)
+          const Center(
+              child: Padding(
+            padding: EdgeInsets.only(bottom: 4),
+            child: Text(
+                'No spending recorded yet. Log an expense on Home\nor spend from a wallet pocket to see your breakdown.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: _C.grey, fontSize: 12, height: 1.4)),
+          ))
+        else ...[
+          for (final slice in slices)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(children: [
+                Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                        color: slice.color, shape: BoxShape.circle)),
+                const SizedBox(width: 9),
+                Expanded(
+                    child: Text(slice.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: _C.dark,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700))),
+                Text('${(slice.amount / total * 100).round()}%',
+                    style: TextStyle(
+                        color: slice.color,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800)),
+                const SizedBox(width: 12),
+                Text(visible ? 'R${slice.amount.toStringAsFixed(2)}' : 'R •••',
+                    style: const TextStyle(
+                        color: _C.dark,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700)),
+              ]),
+            ),
+          const SizedBox(height: 3),
+          const Text('Logged expenses do not change pocket balances.',
+              style: TextStyle(color: _C.grey, fontSize: 10)),
+        ],
+      ]),
+    );
+  }
+}
+
+class _SpendingRingPainter extends CustomPainter {
+  final List<_SpendSlice> slices;
+  const _SpendingRingPainter(this.slices);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromLTWH(12, 12, size.width - 24, size.height - 24);
+    final track = Paint()
+      ..color = const Color(0xFFEEF0F5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 14;
+    canvas.drawArc(rect, 0, 2 * math.pi, false, track);
+    final total = slices.fold<double>(0, (sum, slice) => sum + slice.amount);
+    if (total <= 0) return;
+    var start = -math.pi / 2;
+    for (final slice in slices) {
+      final sweep = 2 * math.pi * slice.amount / total;
+      final gap = math.min(0.035, sweep * 0.25);
+      final paint = Paint()
+        ..color = slice.color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 14;
+      canvas.drawArc(rect, start + gap / 2, sweep - gap, false, paint);
+      start += sweep;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SpendingRingPainter oldDelegate) =>
+      oldDelegate.slices != slices;
+}
+
 class _WalletOverview extends StatelessWidget {
   final double earnings, planningBalance;
   final int points;
@@ -1065,37 +1250,36 @@ class _WalletOverview extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF303238), Color(0xFF111216)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFF41434A)),
+        border: Border.all(color: const Color(0xFFFFDDE2)),
         boxShadow: [
-          BoxShadow(color: _C.primary.withOpacity(0.06), blurRadius: 16)
+          BoxShadow(
+              color: _C.red.withOpacity(0.07),
+              blurRadius: 18,
+              offset: const Offset(0, 6))
         ],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Row(children: [
           CircleAvatar(
-            radius: 18,
-            backgroundColor: Color(0xFF41434A),
-            child: Icon(Icons.wallet_rounded, color: Colors.white, size: 19),
+            radius: 23,
+            backgroundColor: Color(0xFFFFE6EA),
+            child: Icon(Icons.wallet_rounded, color: _C.red, size: 23),
           ),
           SizedBox(width: 10),
           Expanded(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Your money, organised',
+              Text('Your money, your way',
                   style: TextStyle(
-                      color: Colors.white,
+                      color: _C.dark,
                       fontWeight: FontWeight.w800,
-                      fontSize: 16)),
-              Text('Swipe pocket cards below to manage each purpose',
-                  style: TextStyle(color: Colors.white70, fontSize: 11)),
+                      fontSize: 18)),
+              Text('Swipe pockets to plan, save and spend',
+                  style: TextStyle(color: _C.grey, fontSize: 11)),
             ]),
           ),
         ]),
@@ -1104,7 +1288,7 @@ class _WalletOverview extends StatelessWidget {
           Expanded(
             child: _OverviewTile(
               icon: Icons.storefront_rounded,
-              color: const Color(0xFF89B9FF),
+              color: _C.blue,
               label: 'Gude earnings',
               value: 'R${earnings.toStringAsFixed(2)}',
             ),
@@ -1113,7 +1297,7 @@ class _WalletOverview extends StatelessWidget {
           Expanded(
             child: _OverviewTile(
               icon: Icons.stars_rounded,
-              color: const Color(0xFFF59E0B),
+              color: const Color(0xFFE49A00),
               label: 'Gude Points',
               value: '$points pts',
             ),
@@ -1172,7 +1356,7 @@ class _OverviewTile extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.all(11),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withOpacity(0.12),
           borderRadius: BorderRadius.circular(13),
         ),
         child: Row(children: [
@@ -1181,12 +1365,11 @@ class _OverviewTile extends StatelessWidget {
           Expanded(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(label,
-                  style: const TextStyle(color: Colors.white70, fontSize: 10)),
+              Text(label, style: const TextStyle(color: _C.grey, fontSize: 10)),
               Text(value,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                      color: Colors.white,
+                      color: _C.dark,
                       fontWeight: FontWeight.w900,
                       fontSize: 14)),
             ]),
@@ -1204,9 +1387,9 @@ class _PocketCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final startColor = pocket.isMainAccount ? _C.primary : pocket.cardColor;
+    final startColor = pocket.isMainAccount ? _C.red : pocket.cardColor;
     final endColor =
-        pocket.isMainAccount ? const Color(0xFF08090C) : pocket.cardColorEnd;
+        pocket.isMainAccount ? const Color(0xFFA90012) : pocket.cardColorEnd;
     return Container(
       height: double.infinity,
       decoration: BoxDecoration(
@@ -1770,17 +1953,17 @@ class _QA extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = label == 'Goals'
-        ? const Color(0xFFEF476F)
+        ? _C.red
         : label == 'Budget'
-            ? const Color(0xFF7C4DFF)
-            : const Color(0xFF118AB2);
+            ? _C.blue
+            : _C.green;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-            color: accent.withOpacity(0.10),
-            borderRadius: BorderRadius.circular(14),
+            color: accent.withOpacity(0.11),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(color: accent.withOpacity(0.22)),
             boxShadow: [
               BoxShadow(
@@ -1789,13 +1972,16 @@ class _QA extends StatelessWidget {
                   offset: const Offset(0, 2))
             ]),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, color: accent, size: 22),
-          const SizedBox(height: 6),
+          Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                  color: accent, borderRadius: BorderRadius.circular(14)),
+              child: Icon(icon, color: Colors.white, size: 23)),
+          const SizedBox(height: 7),
           Text(label,
               style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF555555))),
+                  fontSize: 11, fontWeight: FontWeight.w800, color: _C.dark)),
         ]),
       ),
     );

@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gude_app/services/user_role_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Pocket {
   final String id;
@@ -29,6 +31,15 @@ class PocketTransaction {
   PocketTransaction(this.label, this.amount, this.isCredit, this.date);
 }
 
+class LoggedExpense {
+  final String category;
+  final String note;
+  final double amount;
+  final DateTime date;
+
+  const LoggedExpense(this.category, this.note, this.amount, this.date);
+}
+
 class GudePointActivity {
   final String id;
   final String reason;
@@ -52,6 +63,8 @@ class WalletService extends ChangeNotifier {
   double _gudeEarningsBalance = 0.0;
   int _gudePoints = 250;
   final List<GudePointActivity> _pointActivities = [];
+  final List<LoggedExpense> _loggedExpenses = [];
+  Future<void>? _expenseLoad;
   final Set<String> _awardedPointActivities = {};
 
   /// Marketplace earnings are kept separate from personal wallet money.
@@ -59,6 +72,63 @@ class WalletService extends ChangeNotifier {
   int get gudePoints => _gudePoints;
   List<GudePointActivity> get pointActivities =>
       List.unmodifiable(_pointActivities);
+  List<LoggedExpense> get loggedExpenses => List.unmodifiable(_loggedExpenses);
+
+  void logExpense(double amount, String category, String note) {
+    if (amount <= 0) return;
+    _loggedExpenses.insert(
+        0, LoggedExpense(category, note, amount, DateTime.now()));
+    notifyListeners();
+    _saveLoggedExpenses();
+  }
+
+  Future<void> _restoreLoggedExpenses() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('gude_logged_expenses');
+      if (raw == null) return;
+      final entries = jsonDecode(raw) as List<dynamic>;
+      for (final entry in entries) {
+        final data = entry as Map<String, dynamic>;
+        final date = DateTime.tryParse(data['date'] as String? ?? '');
+        final amount = (data['amount'] as num?)?.toDouble();
+        if (date == null || amount == null || amount <= 0) continue;
+        if (_loggedExpenses
+            .any((expense) => expense.date == date && expense.amount == amount))
+          continue;
+        _loggedExpenses.add(LoggedExpense(
+          data['category'] as String? ?? 'Other',
+          data['note'] as String? ?? '',
+          amount,
+          date,
+        ));
+      }
+      _loggedExpenses.sort((a, b) => b.date.compareTo(a.date));
+      notifyListeners();
+    } catch (error) {
+      debugPrint('Could not restore logged expenses: $error');
+    }
+  }
+
+  Future<void> _saveLoggedExpenses() async {
+    await (_expenseLoad ??= _restoreLoggedExpenses());
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+          'gude_logged_expenses',
+          jsonEncode([
+            for (final expense in _loggedExpenses)
+              {
+                'category': expense.category,
+                'note': expense.note,
+                'amount': expense.amount,
+                'date': expense.date.toIso8601String(),
+              },
+          ]));
+    } catch (error) {
+      debugPrint('Could not save logged expenses: $error');
+    }
+  }
 
   void recordGudeEarning(double amount, String source) {
     if (amount <= 0) return;
@@ -125,6 +195,7 @@ class WalletService extends ChangeNotifier {
   /// Call once after onboarding so the Main Account pocket is created
   /// with the user's income as its opening balance.
   void initFromOnboarding() {
+    _expenseLoad ??= _restoreLoggedExpenses();
     if (_initialised) {
       // Re-capture initial balance if it was missed on a previous init
       if (initialMainAccountBalance == 0.0 && _pockets.isNotEmpty) {

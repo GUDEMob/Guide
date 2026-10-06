@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 class _C {
   static const primary = Color(0xFF0866E9);
+  static const deal = Color(0xFFE30613);
   static const dark = Color(0xFF1A1A1A);
   static const grey = Color(0xFF888888);
   static const lightGrey = Color(0xFFF5F5F5);
@@ -229,9 +230,9 @@ class _StudentMarketToggle extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFE8EB),
+        color: const Color(0xFFE7F0FF),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _C.primary.withOpacity(0.14)),
+        border: Border.all(color: _C.primary.withOpacity(0.18)),
       ),
       child: Row(children: [
         Expanded(
@@ -290,7 +291,10 @@ class _ModeOption extends StatelessWidget {
               : null,
         ),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(icon, color: selected ? _C.primary : _C.grey, size: 19),
+          Icon(icon,
+              color:
+                  selected ? (label == 'Sell' ? _C.deal : _C.primary) : _C.grey,
+              size: 19),
           const SizedBox(width: 7),
           Flexible(
             child:
@@ -299,7 +303,9 @@ class _ModeOption extends StatelessWidget {
                   style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
-                      color: selected ? _C.primary : _C.dark)),
+                      color: selected
+                          ? (label == 'Sell' ? _C.deal : _C.primary)
+                          : _C.dark)),
               Text(subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -411,6 +417,82 @@ class _BuyerShortcut extends StatelessWidget {
   }
 }
 
+class _MarketIntro extends StatelessWidget {
+  const _MarketIntro();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+        padding: const EdgeInsets.fromLTRB(18, 16, 10, 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFDCEBFF)),
+        ),
+        child: Row(children: [
+          Expanded(
+              child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text('Market',
+                  style: TextStyle(
+                      color: _C.primary,
+                      fontSize: 40,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -1.8,
+                      height: 1.05)),
+              SizedBox(height: 4),
+              Text('Buy. Sell. Save.',
+                  style: TextStyle(
+                      color: _C.dark,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900)),
+              SizedBox(height: 4),
+              Text('Student finds at student-friendly prices.',
+                  style: TextStyle(color: _C.grey, fontSize: 11, height: 1.25)),
+            ],
+          )),
+          SizedBox(
+              width: 106,
+              height: 112,
+              child: Stack(children: [
+                Positioned(
+                    right: 6,
+                    top: 10,
+                    child: Container(
+                      width: 88,
+                      height: 88,
+                      decoration: BoxDecoration(
+                          color: const Color(0xFFE7F0FF),
+                          borderRadius: BorderRadius.circular(24)),
+                      child: const Icon(Icons.shopping_bag_rounded,
+                          color: _C.primary, size: 60),
+                    )),
+                Positioned(
+                    right: 0,
+                    bottom: 2,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 4),
+                      decoration: BoxDecoration(
+                          color: _C.deal,
+                          borderRadius: BorderRadius.circular(8)),
+                      child: const Text('DEALS',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900)),
+                    )),
+                const Positioned(
+                    left: 0,
+                    top: 0,
+                    child: Icon(Icons.star_rounded,
+                        color: Color(0xFFFFBD16), size: 27)),
+              ])),
+        ]),
+      );
+}
+
 class MarketplacePage extends StatefulWidget {
   final bool isBuyer;
   const MarketplacePage({super.key, this.isBuyer = false});
@@ -425,6 +507,20 @@ class _MarketplacePageState extends State<MarketplacePage> {
   String _searchQuery = '';
   final _searchCtrl = TextEditingController();
   final _filters = ['All', 'Electronics', 'Service', 'Stationery', 'Furniture'];
+  final _filterIcons = [
+    Icons.apps_rounded,
+    Icons.laptop_mac_rounded,
+    Icons.design_services_rounded,
+    Icons.edit_note_rounded,
+    Icons.chair_outlined,
+  ];
+  final _filterColors = const [
+    Color(0xFFFFE5E8),
+    Color(0xFFE3EEFF),
+    Color(0xFFEDE6FF),
+    Color(0xFFFFF1D6),
+    Color(0xFFE3F7EF),
+  ];
 
   // ── Filtered + searched list ──────────────────────────────
   List<MarketItem> get _visible {
@@ -462,19 +558,26 @@ class _MarketplacePageState extends State<MarketplacePage> {
           SliverAppBar(
             pinned: true,
             backgroundColor:
-                widget.isBuyer ? const Color(0xFF1A3A8F) : _C.primary,
+                widget.isBuyer ? const Color(0xFF1A3A8F) : Colors.white,
             elevation: 0,
-            title: Text(widget.isBuyer ? 'Discover' : 'Market',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 20)),
+            title: widget.isBuyer
+                ? const Text('Discover',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 20))
+                : const Text('Gude',
+                    style: TextStyle(
+                        color: _C.deal,
+                        fontWeight: FontWeight.w900,
+                        fontStyle: FontStyle.italic,
+                        fontSize: 24)),
             actions: [
               Stack(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.shopping_bag_outlined,
-                        color: Colors.white),
+                    icon: Icon(Icons.shopping_cart_outlined,
+                        color: widget.isBuyer ? Colors.white : _C.dark),
                     onPressed: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -489,7 +592,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
                         width: 17,
                         height: 17,
                         decoration: const BoxDecoration(
-                            color: _C.primary, shape: BoxShape.circle),
+                            color: _C.deal, shape: BoxShape.circle),
                         child: Center(
                           child: Text('${_cart.count}',
                               style: const TextStyle(
@@ -501,6 +604,12 @@ class _MarketplacePageState extends State<MarketplacePage> {
                     ),
                 ],
               ),
+              if (!widget.isBuyer)
+                IconButton(
+                  icon:
+                      const Icon(Icons.person_outline_rounded, color: _C.dark),
+                  onPressed: () => context.push('/profile'),
+                ),
             ],
           ),
 
@@ -508,18 +617,16 @@ class _MarketplacePageState extends State<MarketplacePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (!widget.isBuyer) const _MarketIntro(),
                 // ── Banner ─────────────────────────────────
                 Container(
                   margin: const EdgeInsets.all(16),
-                  constraints: const BoxConstraints(minHeight: 110),
+                  constraints: const BoxConstraints(minHeight: 132),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                        colors: widget.isBuyer
-                            ? const [Color(0xFF1A3A8F), Color(0xFF2D5BE3)]
-                            : const [Color(0xFF003FA8), Color(0xFF2688FF)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight),
-                    borderRadius: BorderRadius.circular(20),
+                    color: widget.isBuyer
+                        ? const Color(0xFF1A3A8F)
+                        : const Color(0xFF0756C9),
+                    borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
                           color: _C.primary.withOpacity(0.18),
@@ -535,40 +642,63 @@ class _MarketplacePageState extends State<MarketplacePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('🛒 Student Deals',
+                          const Text('STUDENT DEALS',
                               style: TextStyle(
-                                  color: Colors.white54, fontSize: 11)),
+                                  color: Color(0xFFFFD166),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.1)),
+                          const SizedBox(height: 5),
                           Text(
                               widget.isBuyer
                                   ? 'Find talent. Get it done.'
                                   : 'Find your next\ncampus favourite.',
                               style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 18,
+                                  fontSize: 21,
                                   fontWeight: FontWeight.w900,
                                   height: 1.2)),
+                          const SizedBox(height: 6),
+                          Text(
+                              widget.isBuyer
+                                  ? 'Discover student skills and services.'
+                                  : 'Books, tech, fashion and more.',
+                              style: const TextStyle(
+                                  color: Colors.white70, fontSize: 11)),
                         ],
                       ),
                     )),
-                    Container(
-                      margin: const EdgeInsets.only(right: 16),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12)),
-                      child: const Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('2X POINTS',
-                              style: TextStyle(
-                                  color: _C.dark,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w900)),
-                          Text('This week',
-                              style: TextStyle(color: _C.dark, fontSize: 10)),
-                        ],
-                      ),
-                    ),
+                    GestureDetector(
+                        onTap: widget.isBuyer
+                            ? null
+                            : () => setState(() {
+                                  _studentMode = 'buy';
+                                  _filter = 'All';
+                                }),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 16),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                              color: _C.deal,
+                              borderRadius: BorderRadius.circular(18)),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                  widget.isBuyer
+                                      ? Icons.work_outline_rounded
+                                      : Icons.shopping_basket_rounded,
+                                  color: Colors.white,
+                                  size: 33),
+                              const SizedBox(height: 4),
+                              Text(widget.isBuyer ? 'GIGS' : 'SHOP',
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900)),
+                            ],
+                          ),
+                        )),
                   ]),
                 ),
 
@@ -595,7 +725,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
                       _CompactListingAction(
                         tooltip: 'List a product',
                         icon: Icons.inventory_2_outlined,
-                        color: _C.primary,
+                        color: _C.deal,
                         onTap: () =>
                             context.push('/marketplace/create?type=product'),
                       ),
@@ -649,7 +779,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: _C.primary.withOpacity(0.16)),
                       boxShadow: [
                         BoxShadow(
@@ -664,8 +794,8 @@ class _MarketplacePageState extends State<MarketplacePage> {
                         hintText: 'Search products & services',
                         hintStyle: const TextStyle(
                             color: Color(0xFFAAAAAA), fontSize: 13),
-                        prefixIcon: const Icon(Icons.search,
-                            color: Color(0xFFAAAAAA), size: 18),
+                        prefixIcon: const Icon(Icons.search_rounded,
+                            color: _C.primary, size: 22),
                         suffixIcon: _searchQuery.isNotEmpty
                             ? IconButton(
                                 icon: const Icon(Icons.close,
@@ -676,7 +806,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
                                 },
                               )
                             : const Icon(Icons.tune_rounded,
-                                color: Color(0xFFAAAAAA), size: 18),
+                                color: _C.primary, size: 20),
                         border: InputBorder.none,
                         contentPadding:
                             const EdgeInsets.symmetric(vertical: 14),
@@ -687,7 +817,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
 
                 // ── Category filters ────────────────────────
                 SizedBox(
-                  height: 38,
+                  height: 42,
                   child: ScrollConfiguration(
                     behavior: ScrollConfiguration.of(context).copyWith(
                       dragDevices: const {
@@ -712,21 +842,30 @@ class _MarketplacePageState extends State<MarketplacePage> {
                               duration: const Duration(milliseconds: 200),
                               margin: const EdgeInsets.only(right: 8),
                               padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
+                                  const EdgeInsets.symmetric(horizontal: 13),
                               decoration: BoxDecoration(
-                                color: sel ? _C.primary : Colors.white,
+                                color: sel
+                                    ? (i == 0 ? _C.deal : _C.primary)
+                                    : _filterColors[i],
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: sel ? _C.primary : _C.border,
-                                  width: 1.5,
+                                  color: sel
+                                      ? (i == 0 ? _C.deal : _C.primary)
+                                      : _filterColors[i],
                                 ),
                               ),
                               child: Center(
-                                child: Text(_filters[i],
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: sel ? Colors.white : _C.grey)),
+                                child: Row(children: [
+                                  Icon(_filterIcons[i],
+                                      size: 16,
+                                      color: sel ? Colors.white : _C.dark),
+                                  const SizedBox(width: 6),
+                                  Text(_filters[i],
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: sel ? Colors.white : _C.dark)),
+                                ]),
                               ),
                             ),
                           );
@@ -743,15 +882,18 @@ class _MarketplacePageState extends State<MarketplacePage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      Expanded(
+                          child: Text(
                         _searchQuery.isNotEmpty
                             ? '${_visible.length} result${_visible.length == 1 ? '' : 's'} for "$_searchQuery"'
-                            : 'Recommended',
+                            : 'Recommended for you',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
                             color: _C.dark),
-                      ),
+                      )),
                     ],
                   ),
                 ),
@@ -1159,9 +1301,13 @@ class _ItemCardState extends State<_ItemCard> {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFE4ECF8)),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 6)
+            BoxShadow(
+                color: _C.primary.withOpacity(0.07),
+                blurRadius: 12,
+                offset: const Offset(0, 5))
           ],
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1169,11 +1315,8 @@ class _ItemCardState extends State<_ItemCard> {
             Container(
               height: 105,
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                    colors: [Color(0xFFE0EEFF), Color(0xFFF2F7FF)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
+                color: Color(0xFFE7F0FF),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Center(
                 child: Text(widget.item.emoji,
@@ -1188,8 +1331,7 @@ class _ItemCardState extends State<_ItemCard> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                      color: _C.primary,
-                      borderRadius: BorderRadius.circular(6)),
+                      color: _C.deal, borderRadius: BorderRadius.circular(6)),
                   child: const Text('SALE',
                       style: TextStyle(
                           color: Colors.white,
@@ -1239,9 +1381,8 @@ class _ItemCardState extends State<_ItemCard> {
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.all(5),
                   decoration: BoxDecoration(
-                    color: isWishlisted
-                        ? _C.primary.withOpacity(0.12)
-                        : Colors.white,
+                    color:
+                        isWishlisted ? _C.deal.withOpacity(0.12) : Colors.white,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
@@ -1260,7 +1401,7 @@ class _ItemCardState extends State<_ItemCard> {
                           : Icons.favorite_border,
                       key: ValueKey(isWishlisted),
                       size: 14,
-                      color: _C.primary,
+                      color: _C.deal,
                     ),
                   ),
                 ),
@@ -1289,7 +1430,7 @@ class _ItemCardState extends State<_ItemCard> {
                       style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
-                          color: _C.primary)),
+                          color: _C.deal)),
                   const SizedBox(width: 4),
                   Text('R${widget.item.originalPrice.toStringAsFixed(0)}',
                       style: const TextStyle(
@@ -1311,7 +1452,7 @@ class _ItemCardState extends State<_ItemCard> {
                     child: Container(
                       padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
-                          color: _C.primary,
+                          color: _C.deal,
                           borderRadius: BorderRadius.circular(9)),
                       child: const Icon(Icons.add_shopping_cart_rounded,
                           size: 14, color: Colors.white),

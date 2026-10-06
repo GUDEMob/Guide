@@ -15,6 +15,8 @@ class BottomNavShell extends StatelessWidget {
         Icons.account_balance_wallet_rounded, 'Wallet'),
     _Tab('/stability', Icons.favorite_outline, Icons.favorite_rounded,
         'Support Hub'),
+    _Tab('/accommodation', Icons.apartment_outlined, Icons.apartment_rounded,
+        'Accommodation'),
   ];
 
   int _activeIndex(BuildContext context) {
@@ -30,7 +32,8 @@ class BottomNavShell extends StatelessWidget {
       Color(0xFFE30613),
       Color(0xFF0866E9),
       Color(0xFF202126),
-      Color(0xFF0866E9)
+      Color(0xFF0866E9),
+      Color(0xFF0B8B78),
     ];
     return Scaffold(
       body: WalkthroughOverlay(child: child),
@@ -58,7 +61,7 @@ class BottomNavShell extends StatelessWidget {
                             horizontal: sel ? 14 : 6, vertical: 4),
                         decoration: BoxDecoration(
                           color: sel
-                              ? accents[i].withOpacity(0.10)
+                              ? accents[i].withValues(alpha: 0.10)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -71,8 +74,10 @@ class BottomNavShell extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         tab.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 9,
+                          fontSize: i == 4 ? 8 : 9,
                           fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
                           color: sel ? accents[i] : const Color(0xFF888888),
                         ),
