@@ -5,6 +5,68 @@ enum CommunityPostType { announcement, event, survey }
 
 enum RequestPriority { low, medium, high }
 
+enum AccommodationFundingType { private, bursary, nsfas, other }
+
+extension AccommodationFundingTypeLabel on AccommodationFundingType {
+  String get label => switch (this) {
+        AccommodationFundingType.private => 'Private',
+        AccommodationFundingType.bursary => 'Bursaries',
+        AccommodationFundingType.nsfas => 'NSFAS',
+        AccommodationFundingType.other => 'Other',
+      };
+}
+
+class AccommodationStudent {
+  final String id;
+  final String name;
+  final String studentNumber;
+  final String institution;
+  final AccommodationFundingType fundingType;
+
+  const AccommodationStudent({
+    required this.id,
+    required this.name,
+    required this.studentNumber,
+    required this.institution,
+    required this.fundingType,
+  });
+}
+
+class AccommodationBed {
+  final String id;
+  final String residence;
+  final String room;
+  final String bedNumber;
+  final String city;
+  final AccommodationStudent? student;
+
+  const AccommodationBed({
+    required this.id,
+    required this.residence,
+    required this.room,
+    required this.bedNumber,
+    required this.city,
+    this.student,
+  });
+
+  bool get occupied => student != null;
+  String get location => '$residence, $city';
+
+  AccommodationBed copyWith({
+    AccommodationStudent? student,
+    bool clearStudent = false,
+  }) {
+    return AccommodationBed(
+      id: id,
+      residence: residence,
+      room: room,
+      bedNumber: bedNumber,
+      city: city,
+      student: clearStudent ? null : student ?? this.student,
+    );
+  }
+}
+
 class CommunityPost {
   final String id;
   final String title;
@@ -13,6 +75,7 @@ class CommunityPost {
   final CommunityPostType type;
   final String published;
   final int engagement;
+  final bool isPinned;
 
   const CommunityPost({
     required this.id,
@@ -22,7 +85,21 @@ class CommunityPost {
     required this.type,
     required this.published,
     this.engagement = 0,
+    this.isPinned = false,
   });
+
+  CommunityPost copyWith({bool? isPinned}) {
+    return CommunityPost(
+      id: id,
+      title: title,
+      detail: detail,
+      audience: audience,
+      type: type,
+      published: published,
+      engagement: engagement,
+      isPinned: isPinned ?? this.isPinned,
+    );
+  }
 }
 
 class ResidenceOpportunity {
@@ -96,7 +173,9 @@ class ResidentRequest {
 }
 
 class AccommodationPortalStore extends ChangeNotifier {
-  AccommodationPortalStore._();
+  AccommodationPortalStore._() {
+    _seedBeds();
+  }
 
   static final AccommodationPortalStore instance = AccommodationPortalStore._();
 
@@ -105,6 +184,7 @@ class AccommodationPortalStore extends ChangeNotifier {
   String contactPerson = 'Residence Operations';
   String city = 'Johannesburg';
   final List<String> residences = ['Braam House', 'Auckland Park Studios'];
+  final List<AccommodationBed> beds = [];
 
   final List<CommunityPost> communityPosts = [
     const CommunityPost(
@@ -197,7 +277,36 @@ class AccommodationPortalStore extends ChangeNotifier {
     ),
   ];
 
-  int get residentCount => 842;
+  int get totalBedCount => beds.length;
+  int get occupiedBedCount => beds.where((bed) => bed.occupied).length;
+  int get availableBedCount => totalBedCount - occupiedBedCount;
+  int get residentCount => occupiedBedCount;
+  int get occupancyRate => totalBedCount == 0
+      ? 0
+      : ((occupiedBedCount / totalBedCount) * 100).round();
+  List<AccommodationBed> get occupiedBeds =>
+      beds.where((bed) => bed.occupied).toList(growable: false);
+  List<AccommodationBed> get availableBeds =>
+      beds.where((bed) => !bed.occupied).toList(growable: false);
+  Map<AccommodationFundingType, int> get fundingBreakdown {
+    final values = {
+      for (final type in AccommodationFundingType.values) type: 0,
+    };
+    for (final bed in occupiedBeds) {
+      final funding = bed.student!.fundingType;
+      values[funding] = values[funding]! + 1;
+    }
+    return values;
+  }
+
+  Map<String, int> get availableBedsByResidence {
+    final values = <String, int>{};
+    for (final bed in availableBeds) {
+      values[bed.location] = (values[bed.location] ?? 0) + 1;
+    }
+    return values;
+  }
+
   int get engagementRate => 68;
   int get openOpportunityCount =>
       opportunities.where((item) => item.isOpen).length;
@@ -265,6 +374,50 @@ class AccommodationPortalStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  void reopenRequest(String id) {
+    final index = requests.indexWhere((item) => item.id == id);
+    if (index < 0) return;
+    requests[index] = requests[index].copyWith(resolved: false);
+    notifyListeners();
+  }
+
+  void toggleCommunityPostPinned(String id) {
+    final index = communityPosts.indexWhere((item) => item.id == id);
+    if (index < 0) return;
+    communityPosts[index] = communityPosts[index].copyWith(
+      isPinned: !communityPosts[index].isPinned,
+    );
+    notifyListeners();
+  }
+
+  void assignStudentToBed({
+    required String bedId,
+    required String name,
+    required String studentNumber,
+    required String institution,
+    required AccommodationFundingType fundingType,
+  }) {
+    final index = beds.indexWhere((bed) => bed.id == bedId);
+    if (index < 0 || beds[index].occupied) return;
+    beds[index] = beds[index].copyWith(
+      student: AccommodationStudent(
+        id: 'resident-${DateTime.now().microsecondsSinceEpoch}',
+        name: name.trim(),
+        studentNumber: studentNumber.trim(),
+        institution: institution.trim(),
+        fundingType: fundingType,
+      ),
+    );
+    notifyListeners();
+  }
+
+  void vacateBed(String bedId) {
+    final index = beds.indexWhere((bed) => bed.id == bedId);
+    if (index < 0 || !beds[index].occupied) return;
+    beds[index] = beds[index].copyWith(clearStudent: true);
+    notifyListeners();
+  }
+
   void updateProfile({
     required String name,
     required String email,
@@ -277,5 +430,78 @@ class AccommodationPortalStore extends ChangeNotifier {
     city = location;
     UserRoleService().institutionName = name;
     notifyListeners();
+  }
+
+  void _seedBeds() {
+    if (beds.isNotEmpty) return;
+    const residenceData = [
+      ('Braam House', 'Johannesburg', 500, 486, 'BH'),
+      ('Auckland Park Studios', 'Johannesburg', 420, 356, 'AP'),
+    ];
+    const firstNames = [
+      'Amahle',
+      'Lethabo',
+      'Thando',
+      'Naledi',
+      'Karabo',
+      'Siyabonga',
+      'Zinhle',
+      'Lesedi',
+    ];
+    const surnames = [
+      'Mokoena',
+      'Dlamini',
+      'Khumalo',
+      'Nkosi',
+      'Mthembu',
+      'Mahlangu',
+      'Mabena',
+      'Ndlovu',
+    ];
+    const institutions = [
+      'University of Johannesburg',
+      'University of the Witwatersrand',
+      'Rosebank College',
+      'Boston City Campus',
+    ];
+    const fundingCycle = [
+      AccommodationFundingType.nsfas,
+      AccommodationFundingType.private,
+      AccommodationFundingType.nsfas,
+      AccommodationFundingType.bursary,
+      AccommodationFundingType.private,
+      AccommodationFundingType.other,
+    ];
+
+    var globalIndex = 0;
+    for (final data in residenceData) {
+      final (residence, bedCity, capacity, occupied, code) = data;
+      for (var index = 0; index < capacity; index++) {
+        final roomNumber = 100 + (index ~/ 2);
+        final bedLetter = index.isEven ? 'A' : 'B';
+        AccommodationStudent? student;
+        if (index < occupied) {
+          student = AccommodationStudent(
+            id: 'resident-$globalIndex',
+            name:
+                '${firstNames[globalIndex % firstNames.length]} ${surnames[(globalIndex * 3) % surnames.length]}',
+            studentNumber: 'STU${(20260000 + globalIndex)}',
+            institution: institutions[globalIndex % institutions.length],
+            fundingType: fundingCycle[globalIndex % fundingCycle.length],
+          );
+        }
+        beds.add(
+          AccommodationBed(
+            id: '$code-${index + 1}',
+            residence: residence,
+            room: '$roomNumber',
+            bedNumber: '$roomNumber$bedLetter',
+            city: bedCity,
+            student: student,
+          ),
+        );
+        globalIndex++;
+      }
+    }
   }
 }

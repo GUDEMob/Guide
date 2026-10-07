@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gude_app/features/accommodation/presentation/accommodation_ui.dart';
 import 'package:gude_app/features/psha/data/psha_portal_store.dart';
+import 'package:gude_app/features/psha/presentation/psha_ui.dart';
 import 'package:gude_app/services/user_role_service.dart';
 
 class PshaProfilePage extends StatefulWidget {
@@ -20,23 +21,38 @@ class _PshaProfilePageState extends State<PshaProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AccommodationColors.canvas,
+      backgroundColor: PshaColors.canvas,
       body: SafeArea(
         bottom: false,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 96),
           children: [
             const PortalPageHeader(
               eyebrow: 'Association administration',
               title: 'PSHA Admin',
               subtitle: 'Manage access, reporting and network settings.',
+              icon: Icons.admin_panel_settings_rounded,
+              accent: PshaColors.primary,
+              secondary: PshaColors.teal,
+              backRoute: '/psha/overview',
             ),
             const SizedBox(height: 18),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AccommodationColors.ink,
-                borderRadius: BorderRadius.circular(10),
+                gradient: const LinearGradient(
+                  colors: [PshaColors.deep, PshaColors.primary],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: PshaColors.primary.withValues(alpha: 0.18),
+                    blurRadius: 18,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
@@ -45,7 +61,7 @@ class _PshaProfilePageState extends State<PshaProfilePage> {
                     height: 50,
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Icon(Icons.hub_rounded, color: Colors.white),
                   ),
@@ -73,10 +89,39 @@ class _PshaProfilePageState extends State<PshaProfilePage> {
                       ],
                     ),
                   ),
-                  const Icon(Icons.verified_rounded,
-                      color: AccommodationColors.green),
+                  const Icon(Icons.verified_rounded, color: Colors.white),
                 ],
               ),
+            ),
+            const SizedBox(height: 14),
+            PortalSummaryBand(
+              colors: const [PshaColors.primary, PshaColors.teal],
+              items: [
+                PortalSummaryItem(
+                  value: '${store.providerCount}',
+                  label: 'Members',
+                  icon: Icons.business_rounded,
+                  onTap: () => _showMessage(
+                    '${store.providerCount} providers in the PSHA network.',
+                  ),
+                ),
+                PortalSummaryItem(
+                  value: '${store.buildingCount}',
+                  label: 'Buildings',
+                  icon: Icons.apartment_rounded,
+                  onTap: () => _showMessage(
+                    '${store.buildingCount} registered buildings.',
+                  ),
+                ),
+                PortalSummaryItem(
+                  value: '${store.openAlertCount}',
+                  label: 'Alerts',
+                  icon: Icons.notifications_rounded,
+                  onTap: () => _showMessage(
+                    '${store.openAlertCount} network alerts need review.',
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 22),
             const PortalSectionTitle('Administrators'),
@@ -84,8 +129,8 @@ class _PshaProfilePageState extends State<PshaProfilePage> {
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AccommodationColors.line),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: PshaColors.line),
               ),
               child: Column(
                 children: [
@@ -102,8 +147,10 @@ class _PshaProfilePageState extends State<PshaProfilePage> {
                   ),
                   const Divider(height: 1),
                   ListTile(
-                    leading: const Icon(Icons.person_add_alt_1_rounded,
-                        color: AccommodationColors.primary),
+                    leading: const Icon(
+                      Icons.person_add_alt_1_rounded,
+                      color: PshaColors.primary,
+                    ),
                     title: const Text(
                       'Invite administrator',
                       style: TextStyle(fontWeight: FontWeight.w800),
@@ -120,8 +167,8 @@ class _PshaProfilePageState extends State<PshaProfilePage> {
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AccommodationColors.line),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: PshaColors.line),
               ),
               child: Column(
                 children: [
@@ -129,6 +176,7 @@ class _PshaProfilePageState extends State<PshaProfilePage> {
                     title: const Text('Member change alerts'),
                     subtitle: const Text('Provider and building updates.'),
                     value: memberAlerts,
+                    activeTrackColor: PshaColors.primary,
                     onChanged: (value) => setState(() => memberAlerts = value),
                   ),
                   const Divider(height: 1),
@@ -136,6 +184,7 @@ class _PshaProfilePageState extends State<PshaProfilePage> {
                     title: const Text('Monthly impact report'),
                     subtitle: const Text('Email the aggregated PSHA report.'),
                     value: monthlyReport,
+                    activeTrackColor: PshaColors.primary,
                     onChanged: (value) => setState(() => monthlyReport = value),
                   ),
                   const Divider(height: 1),
@@ -143,6 +192,7 @@ class _PshaProfilePageState extends State<PshaProfilePage> {
                     title: const Text('Security alerts'),
                     subtitle: const Text('Notify owners about admin access.'),
                     value: securityAlerts,
+                    activeTrackColor: PshaColors.primary,
                     onChanged: (value) =>
                         setState(() => securityAlerts = value),
                   ),
@@ -162,7 +212,7 @@ class _PshaProfilePageState extends State<PshaProfilePage> {
               style: OutlinedButton.styleFrom(
                 foregroundColor: AccommodationColors.ink,
                 minimumSize: const Size.fromHeight(48),
-                side: const BorderSide(color: AccommodationColors.line),
+                side: const BorderSide(color: PshaColors.line),
               ),
             ),
             const SizedBox(height: 10),
@@ -171,10 +221,10 @@ class _PshaProfilePageState extends State<PshaProfilePage> {
               icon: const Icon(Icons.logout_rounded),
               label: const Text('Log out'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AccommodationColors.primary,
+                foregroundColor: PshaColors.primary,
                 minimumSize: const Size.fromHeight(48),
                 side: BorderSide(
-                  color: AccommodationColors.primary.withValues(alpha: 0.25),
+                  color: PshaColors.primary.withValues(alpha: 0.25),
                 ),
               ),
             ),
@@ -198,6 +248,7 @@ class _PshaProfilePageState extends State<PshaProfilePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
+            style: TextButton.styleFrom(foregroundColor: PshaColors.primary),
             child: const Text('Cancel'),
           ),
           FilledButton(
@@ -206,6 +257,10 @@ class _PshaProfilePageState extends State<PshaProfilePage> {
               UserRoleService().clear();
               context.go('/login');
             },
+            style: FilledButton.styleFrom(
+              backgroundColor: PshaColors.primary,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Log out'),
           ),
         ],
@@ -229,11 +284,11 @@ class _AdminRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: AccommodationColors.blue.withValues(alpha: 0.1),
+        backgroundColor: PshaColors.primary.withValues(alpha: 0.1),
         child: Text(
           name.substring(0, 1),
           style: const TextStyle(
-            color: AccommodationColors.blue,
+            color: PshaColors.primary,
             fontWeight: FontWeight.w900,
           ),
         ),

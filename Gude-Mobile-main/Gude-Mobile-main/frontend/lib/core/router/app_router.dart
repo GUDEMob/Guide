@@ -72,8 +72,12 @@ import 'package:gude_app/features/accommodation/presentation/accommodation_overv
 import 'package:gude_app/features/accommodation/presentation/accommodation_community_page.dart';
 import 'package:gude_app/features/accommodation/presentation/accommodation_opportunities_page.dart';
 import 'package:gude_app/features/accommodation/presentation/accommodation_profile_page.dart';
+import 'package:gude_app/features/accommodation/presentation/accommodation_residents_page.dart';
+import 'package:gude_app/features/accommodation/presentation/accommodation_service_page.dart';
 import 'package:gude_app/features/psha/presentation/psha_overview_page.dart';
 import 'package:gude_app/features/psha/presentation/psha_members_page.dart';
+import 'package:gude_app/features/psha/presentation/psha_occupancy_page.dart';
+import 'package:gude_app/features/psha/presentation/psha_operations_page.dart';
 import 'package:gude_app/features/psha/presentation/psha_impact_page.dart';
 import 'package:gude_app/features/psha/presentation/psha_profile_page.dart';
 
@@ -275,6 +279,14 @@ class AppRouter {
               path: '/accommodation/opportunities',
               builder: (c, s) => const AccommodationOpportunitiesPage()),
           GoRoute(
+              path: '/accommodation/residents',
+              builder: (c, s) => const AccommodationResidentsPage()),
+          GoRoute(
+              path: '/accommodation/service',
+              builder: (c, s) => AccommodationServicePage(
+                    initialTab: s.uri.queryParameters['tab'] ?? 'complaints',
+                  )),
+          GoRoute(
               path: '/accommodation/profile',
               builder: (c, s) => const AccommodationProfilePage()),
         ],
@@ -291,7 +303,17 @@ class AppRouter {
               builder: (c, s) => const PshaOverviewPage()),
           GoRoute(
               path: '/psha/members',
-              builder: (c, s) => const PshaMembersPage()),
+              builder: (c, s) => PshaMembersPage(
+                    initialProviderId: s.uri.queryParameters['provider'],
+                  )),
+          GoRoute(
+              path: '/psha/occupancy',
+              builder: (c, s) => const PshaOccupancyPage()),
+          GoRoute(
+              path: '/psha/operations',
+              builder: (c, s) => PshaOperationsPage(
+                    initialTab: s.uri.queryParameters['tab'] ?? 'complaints',
+                  )),
           GoRoute(
               path: '/psha/impact', builder: (c, s) => const PshaImpactPage()),
           GoRoute(

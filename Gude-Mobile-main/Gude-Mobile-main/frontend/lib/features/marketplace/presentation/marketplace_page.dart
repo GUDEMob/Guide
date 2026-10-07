@@ -4,7 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:go_router/go_router.dart';
 
 class _C {
-  static const primary = Color(0xFFE30613);
+  static const primary = Color(0xFF0866E9);
   static const dark = Color(0xFF1A1A1A);
   static const grey = Color(0xFF888888);
   static const lightGrey = Color(0xFFF5F5F5);
@@ -283,14 +283,18 @@ class _ModeOption extends StatelessWidget {
           color: selected ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           boxShadow: selected
-              ? [BoxShadow(color: Colors.black.withOpacity(0.07), blurRadius: 8)]
+              ? [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.07), blurRadius: 8)
+                ]
               : null,
         ),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           Icon(icon, color: selected ? _C.primary : _C.grey, size: 19),
           const SizedBox(width: 7),
           Flexible(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(label,
                   style: TextStyle(
                       fontSize: 12,
@@ -400,9 +404,7 @@ class _BuyerShortcut extends StatelessWidget {
           const SizedBox(height: 5),
           Text(label,
               style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: _C.dark)),
+                  fontSize: 11, fontWeight: FontWeight.w700, color: _C.dark)),
         ]),
       ),
     );
@@ -453,7 +455,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF7F8),
+      backgroundColor: const Color(0xFFF2F7FF),
       body: CustomScrollView(
         slivers: [
           // ── App bar ─────────────────────────────────────
@@ -464,13 +466,15 @@ class _MarketplacePageState extends State<MarketplacePage> {
             elevation: 0,
             title: Text(widget.isBuyer ? 'Discover' : 'Market',
                 style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20)),
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 20)),
             actions: [
               Stack(
                 children: [
                   IconButton(
-                    icon:
-                        const Icon(Icons.shopping_bag_outlined, color: Colors.white),
+                    icon: const Icon(Icons.shopping_bag_outlined,
+                        color: Colors.white),
                     onPressed: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -507,12 +511,12 @@ class _MarketplacePageState extends State<MarketplacePage> {
                 // ── Banner ─────────────────────────────────
                 Container(
                   margin: const EdgeInsets.all(16),
-                  height: 92,
+                  constraints: const BoxConstraints(minHeight: 110),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                         colors: widget.isBuyer
                             ? const [Color(0xFF1A3A8F), Color(0xFF2D5BE3)]
-                            : const [Color(0xFFE30613), Color(0xFF7C4DFF)],
+                            : const [Color(0xFF003FA8), Color(0xFF2688FF)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight),
                     borderRadius: BorderRadius.circular(20),
@@ -524,7 +528,8 @@ class _MarketplacePageState extends State<MarketplacePage> {
                     ],
                   ),
                   child: Row(children: [
-                    Padding(
+                    Expanded(
+                        child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -536,7 +541,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
                           Text(
                               widget.isBuyer
                                   ? 'Find talent. Get it done.'
-                                  : 'Buy less. Earn more.',
+                                  : 'Find your next\ncampus favourite.',
                               style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 18,
@@ -544,13 +549,12 @@ class _MarketplacePageState extends State<MarketplacePage> {
                                   height: 1.2)),
                         ],
                       ),
-                    ),
-                    const Spacer(),
+                    )),
                     Container(
                       margin: const EdgeInsets.only(right: 16),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                          color: const Color(0xFFFFC857),
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(12)),
                       child: const Column(
                         mainAxisSize: MainAxisSize.min,
@@ -561,8 +565,7 @@ class _MarketplacePageState extends State<MarketplacePage> {
                                   fontSize: 15,
                                   fontWeight: FontWeight.w900)),
                           Text('This week',
-                              style: TextStyle(
-                                  color: _C.dark, fontSize: 10)),
+                              style: TextStyle(color: _C.dark, fontSize: 10)),
                         ],
                       ),
                     ),
@@ -593,14 +596,16 @@ class _MarketplacePageState extends State<MarketplacePage> {
                         tooltip: 'List a product',
                         icon: Icons.inventory_2_outlined,
                         color: _C.primary,
-                        onTap: () => context.push('/marketplace/create?type=product'),
+                        onTap: () =>
+                            context.push('/marketplace/create?type=product'),
                       ),
                       const SizedBox(width: 10),
                       _CompactListingAction(
                         tooltip: 'List a service',
                         icon: Icons.design_services_outlined,
                         color: const Color(0xFF3B82F6),
-                        onTap: () => context.push('/marketplace/create?type=service'),
+                        onTap: () =>
+                            context.push('/marketplace/create?type=service'),
                       ),
                     ]),
                   ),
@@ -1164,7 +1169,10 @@ class _ItemCardState extends State<_ItemCard> {
             Container(
               height: 105,
               decoration: const BoxDecoration(
-                color: Color(0xFFF5F5F5),
+                gradient: LinearGradient(
+                    colors: [Color(0xFFE0EEFF), Color(0xFFF2F7FF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
               ),
               child: Center(

@@ -2,9 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:gude_app/features/accommodation/presentation/accommodation_ui.dart';
 import 'package:gude_app/features/psha/data/psha_portal_store.dart';
+import 'package:gude_app/features/psha/presentation/psha_ui.dart';
+
+InputDecoration _pshaInputDecoration(String label, {IconData? icon}) {
+  return portalInputDecoration(
+    label,
+    icon: icon,
+    accent: PshaColors.primary,
+    line: PshaColors.line,
+  );
+}
 
 class PshaMembersPage extends StatefulWidget {
-  const PshaMembersPage({super.key});
+  final String? initialProviderId;
+
+  const PshaMembersPage({super.key, this.initialProviderId});
 
   @override
   State<PshaMembersPage> createState() => _PshaMembersPageState();
@@ -17,6 +29,18 @@ class _PshaMembersPageState extends State<PshaMembersPage> {
   bool activeOnly = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || widget.initialProviderId == null) return;
+      final index = store.providers.indexWhere(
+        (provider) => provider.id == widget.initialProviderId,
+      );
+      if (index >= 0) _openProvider(store.providers[index]);
+    });
+  }
+
+  @override
   void dispose() {
     searchController.dispose();
     super.dispose();
@@ -24,11 +48,12 @@ class _PshaMembersPageState extends State<PshaMembersPage> {
 
   @override
   Widget build(BuildContext context) {
+    final number = NumberFormat.decimalPattern();
     return Scaffold(
-      backgroundColor: AccommodationColors.canvas,
+      backgroundColor: PshaColors.canvas,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openAddMember,
-        backgroundColor: AccommodationColors.primary,
+        backgroundColor: PshaColors.primary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_business_rounded),
         label: const Text('Add member'),
@@ -53,7 +78,7 @@ class _PshaMembersPageState extends State<PshaMembersPage> {
               slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -62,35 +87,76 @@ class _PshaMembersPageState extends State<PshaMembersPage> {
                           title: 'Members & buildings',
                           subtitle:
                               'Manage participating providers and their residence portfolio.',
+                          icon: Icons.apartment_rounded,
+                          accent: PshaColors.primary,
+                          secondary: PshaColors.teal,
+                          backRoute: '/psha/overview',
                         ),
                         const SizedBox(height: 16),
-                        TextField(
+                        PortalSearchBar(
                           controller: searchController,
+                          hint: 'Search providers, buildings or cities',
+                          accent: PshaColors.primary,
                           onChanged: (value) => setState(() => query = value),
-                          decoration: portalInputDecoration(
-                            'Search providers, buildings or cities',
-                            icon: Icons.search_rounded,
-                          ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
+                        PortalSummaryBand(
+                          colors: const [
+                            PshaColors.deep,
+                            PshaColors.primary,
+                            PshaColors.teal,
+                          ],
+                          items: [
+                            PortalSummaryItem(
+                              value: '${store.activeProviderCount}',
+                              label: 'Active',
+                              icon: Icons.verified_rounded,
+                              onTap: () => setState(() => activeOnly = true),
+                            ),
+                            PortalSummaryItem(
+                              value: '${store.buildingCount}',
+                              label: 'Buildings',
+                              icon: Icons.apartment_rounded,
+                              onTap: () => _showMetric(
+                                '${store.buildingCount} buildings across the network.',
+                              ),
+                            ),
+                            PortalSummaryItem(
+                              value: number.format(store.studentCount),
+                              label: 'Students',
+                              icon: Icons.groups_2_rounded,
+                              onTap: () => _showMetric(
+                                '${number.format(store.studentCount)} students housed by members.',
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
                         Row(
                           children: [
                             Expanded(
-                              child: SegmentedButton<bool>(
-                                segments: const [
-                                  ButtonSegment(
-                                    value: false,
-                                    label: Text('All members'),
+                              child: Theme(
+                                data: Theme.of(context).copyWith(
+                                  colorScheme: ColorScheme.fromSeed(
+                                    seedColor: PshaColors.primary,
                                   ),
-                                  ButtonSegment(
-                                    value: true,
-                                    label: Text('Active'),
+                                ),
+                                child: SegmentedButton<bool>(
+                                  segments: const [
+                                    ButtonSegment(
+                                      value: false,
+                                      label: Text('All members'),
+                                    ),
+                                    ButtonSegment(
+                                      value: true,
+                                      label: Text('Active'),
+                                    ),
+                                  ],
+                                  selected: {activeOnly},
+                                  showSelectedIcon: false,
+                                  onSelectionChanged: (value) => setState(
+                                    () => activeOnly = value.first,
                                   ),
-                                ],
-                                selected: {activeOnly},
-                                showSelectedIcon: false,
-                                onSelectionChanged: (value) => setState(
-                                  () => activeOnly = value.first,
                                 ),
                               ),
                             ),
@@ -106,25 +172,31 @@ class _PshaMembersPageState extends State<PshaMembersPage> {
                     ),
                   ),
                 ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _MemberCard(
-                          provider: visible[index],
-                          onOpen: () => _openProvider(visible[index]),
-                          onStatusChanged: (value) => store.setProviderActive(
-                            visible[index].id,
-                            value,
+                if (visible.isEmpty)
+                  const SliverPadding(
+                    padding: EdgeInsets.fromLTRB(16, 0, 16, 96),
+                    sliver: SliverToBoxAdapter(child: _EmptyMemberState()),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _MemberCard(
+                            provider: visible[index],
+                            onOpen: () => _openProvider(visible[index]),
+                            onStatusChanged: (value) => store.setProviderActive(
+                              visible[index].id,
+                              value,
+                            ),
                           ),
                         ),
+                        childCount: visible.length,
                       ),
-                      childCount: visible.length,
                     ),
                   ),
-                ),
               ],
             );
           },
@@ -160,6 +232,43 @@ class _PshaMembersPageState extends State<PshaMembersPage> {
       );
     }
   }
+
+  void _showMetric(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+}
+
+class _EmptyMemberState extends StatelessWidget {
+  const _EmptyMemberState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 30),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: PshaColors.line),
+      ),
+      child: const Column(
+        children: [
+          Icon(Icons.domain_disabled_rounded, color: PshaColors.muted),
+          SizedBox(height: 8),
+          Text(
+            'No member providers match these filters.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: PshaColors.muted,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _MemberCard extends StatelessWidget {
@@ -179,26 +288,43 @@ class _MemberCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AccommodationColors.line),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: PshaColors.line),
+        boxShadow: [
+          BoxShadow(
+            color: PshaColors.deep.withValues(alpha: 0.055),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              CircleAvatar(
-                backgroundColor:
-                    AccommodationColors.primary.withValues(alpha: 0.1),
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [PshaColors.primary, PshaColors.teal],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                alignment: Alignment.center,
                 child: Text(
                   provider.name.substring(0, 1),
                   style: const TextStyle(
-                    color: AccommodationColors.primary,
+                    color: Colors.white,
+                    fontSize: 18,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,58 +332,135 @@ class _MemberCard extends StatelessWidget {
                     Text(
                       provider.name,
                       style: const TextStyle(
-                        color: AccommodationColors.ink,
+                        color: PshaColors.ink,
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       provider.contact,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: AccommodationColors.muted,
+                        color: PshaColors.muted,
                         fontSize: 10,
                       ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: provider.active
+                                ? PshaColors.primary
+                                : PshaColors.muted,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          provider.active ? 'Active member' : 'Inactive member',
+                          style: TextStyle(
+                            color: provider.active
+                                ? PshaColors.primary
+                                : PshaColors.muted,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
               Switch.adaptive(
                 value: provider.active,
-                activeTrackColor: AccommodationColors.green,
+                activeTrackColor: PshaColors.primary,
                 onChanged: onStatusChanged,
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 13),
+            child: Divider(height: 1, color: PshaColors.line),
+          ),
           Row(
             children: [
               _MemberStat(
                 value: '${provider.buildings.length}',
                 label: 'Buildings',
+                icon: Icons.apartment_rounded,
+                color: PshaColors.primary,
               ),
+              const _StatDivider(),
               _MemberStat(
                 value: NumberFormat.compact().format(provider.studentCount),
                 label: 'Students',
+                icon: Icons.groups_2_rounded,
+                color: PshaColors.blue,
               ),
+              const _StatDivider(),
               _MemberStat(
-                value: '${provider.engagement}%',
-                label: 'Engagement',
+                value: '${provider.opportunities}',
+                label: 'Opportunities',
+                icon: Icons.work_rounded,
+                color: PshaColors.amber,
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          OutlinedButton.icon(
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              const Icon(
+                Icons.insights_rounded,
+                size: 17,
+                color: PshaColors.teal,
+              ),
+              const SizedBox(width: 7),
+              const Expanded(
+                child: Text(
+                  'Student engagement',
+                  style: TextStyle(
+                    color: PshaColors.muted,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                '${provider.engagement}%',
+                style: const TextStyle(
+                  color: PshaColors.primary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 7),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(5),
+            child: LinearProgressIndicator(
+              value: provider.engagement / 100,
+              minHeight: 6,
+              color: PshaColors.primary,
+              backgroundColor: PshaColors.primary.withValues(alpha: 0.1),
+            ),
+          ),
+          const SizedBox(height: 13),
+          FilledButton.icon(
             onPressed: onOpen,
             icon: const Icon(Icons.domain_outlined, size: 18),
             label: const Text('Manage buildings'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AccommodationColors.ink,
+            style: FilledButton.styleFrom(
+              foregroundColor: PshaColors.deep,
+              backgroundColor: PshaColors.primary.withValues(alpha: 0.1),
               minimumSize: const Size.fromHeight(42),
-              side: const BorderSide(color: AccommodationColors.line),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(9),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           ),
@@ -270,33 +473,56 @@ class _MemberCard extends StatelessWidget {
 class _MemberStat extends StatelessWidget {
   final String value;
   final String label;
+  final IconData icon;
+  final Color color;
 
-  const _MemberStat({required this.value, required this.label});
+  const _MemberStat({
+    required this.value,
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          Icon(icon, color: color, size: 17),
+          const SizedBox(height: 5),
           Text(
             value,
             style: const TextStyle(
-              color: AccommodationColors.ink,
+              color: PshaColors.ink,
               fontSize: 16,
               fontWeight: FontWeight.w900,
             ),
           ),
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              color: AccommodationColors.muted,
+              color: PshaColors.muted,
               fontSize: 9,
               fontWeight: FontWeight.w700,
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _StatDivider extends StatelessWidget {
+  const _StatDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      height: 42,
+      child: VerticalDivider(width: 14, color: PshaColors.line),
     );
   }
 }
@@ -352,7 +578,7 @@ class _ProviderDetailSheet extends StatelessWidget {
                     padding: const EdgeInsets.all(13),
                     decoration: BoxDecoration(
                       color: AccommodationColors.canvas,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: AccommodationColors.line),
                     ),
                     child: Row(
@@ -385,7 +611,7 @@ class _ProviderDetailSheet extends StatelessWidget {
                         Text(
                           '${building.occupancy}%',
                           style: const TextStyle(
-                            color: AccommodationColors.green,
+                            color: PshaColors.primary,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
@@ -405,7 +631,7 @@ class _ProviderDetailSheet extends StatelessWidget {
                 icon: const Icon(Icons.add_rounded),
                 label: const Text('Add building'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AccommodationColors.primary,
+                  backgroundColor: PshaColors.primary,
                   foregroundColor: Colors.white,
                   minimumSize: const Size.fromHeight(48),
                 ),
@@ -456,24 +682,24 @@ class _AddBuildingDialogState extends State<_AddBuildingDialog> {
           children: [
             TextField(
               controller: nameController,
-              decoration: portalInputDecoration('Building name'),
+              decoration: _pshaInputDecoration('Building name'),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: cityController,
-              decoration: portalInputDecoration('City'),
+              decoration: _pshaInputDecoration('City'),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: studentsController,
               keyboardType: TextInputType.number,
-              decoration: portalInputDecoration('Current students'),
+              decoration: _pshaInputDecoration('Current students'),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: capacityController,
               keyboardType: TextInputType.number,
-              decoration: portalInputDecoration('Capacity'),
+              decoration: _pshaInputDecoration('Capacity'),
             ),
           ],
         ),
@@ -485,6 +711,10 @@ class _AddBuildingDialogState extends State<_AddBuildingDialog> {
         ),
         FilledButton(
           onPressed: _submit,
+          style: FilledButton.styleFrom(
+            backgroundColor: PshaColors.primary,
+            foregroundColor: Colors.white,
+          ),
           child: const Text('Add'),
         ),
       ],
@@ -568,29 +798,29 @@ class _AddMemberSheetState extends State<_AddMemberSheet> {
               const SizedBox(height: 14),
               TextField(
                 controller: nameController,
-                decoration: portalInputDecoration('Provider name'),
+                decoration: _pshaInputDecoration('Provider name'),
               ),
               const SizedBox(height: 9),
               TextField(
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: portalInputDecoration('Contact email'),
+                decoration: _pshaInputDecoration('Contact email'),
               ),
               const SizedBox(height: 9),
               TextField(
                 controller: buildingController,
-                decoration: portalInputDecoration('First building'),
+                decoration: _pshaInputDecoration('First building'),
               ),
               const SizedBox(height: 9),
               TextField(
                 controller: cityController,
-                decoration: portalInputDecoration('City'),
+                decoration: _pshaInputDecoration('City'),
               ),
               const SizedBox(height: 9),
               TextField(
                 controller: studentsController,
                 keyboardType: TextInputType.number,
-                decoration: portalInputDecoration('Current student count'),
+                decoration: _pshaInputDecoration('Current student count'),
               ),
               const SizedBox(height: 18),
               FilledButton.icon(
@@ -598,7 +828,7 @@ class _AddMemberSheetState extends State<_AddMemberSheet> {
                 icon: const Icon(Icons.person_add_alt_1_rounded),
                 label: const Text('Create member'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AccommodationColors.primary,
+                  backgroundColor: PshaColors.primary,
                   foregroundColor: Colors.white,
                   minimumSize: const Size.fromHeight(50),
                 ),

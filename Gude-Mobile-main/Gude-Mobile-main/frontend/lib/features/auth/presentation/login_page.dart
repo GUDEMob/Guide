@@ -6,7 +6,6 @@ import 'package:gude_app/services/user_role_service.dart';
 
 class _C {
   static const primary = Color(0xFFE30613);
-  static const primaryDark = Color(0xFFB0000E);
   static const dark = Color(0xFF1A1A1A);
   static const grey = Color(0xFF888888);
   static const border = Color(0xFFE0E0E0);
@@ -72,7 +71,7 @@ class _LoginPageState extends State<LoginPage> {
         if (!valid) {
           _emailValidationError = _organisationType == 'university'
               ? 'Use your institution email ending in .ac.za or .edu.za'
-              : 'Enter a valid organisation email address';
+              : 'Enter a valid business email address';
           _emailError = true;
         }
       }
@@ -136,19 +135,20 @@ class _LoginPageState extends State<LoginPage> {
                       onChanged: (t) {
                         setState(() {
                           _userType = t;
-                          if (t == 'institution')
+                          if (t == 'institution') {
                             _role = 'institution';
-                          else if (t == 'student')
+                          } else if (t == 'student') {
                             _role = 'student';
-                          else
+                          } else {
                             _role = 'buyer';
+                          }
                         });
                         _clearEmailErrors();
                       },
                     ),
                     if (_userType == 'institution') ...[
                       const SizedBox(height: 14),
-                      _OrganisationTypeSelector(
+                      _BusinessTypeSelector(
                         selected: _organisationType,
                         onChanged: (value) => setState(() {
                           _organisationType = value;
@@ -173,7 +173,9 @@ class _LoginPageState extends State<LoginPage> {
                       hint: _userType == 'student'
                           ? 'studentnumber@university.ac.za'
                           : _userType == 'institution'
-                              ? 'institution@domain.ac.za'
+                              ? _organisationType == 'university'
+                                  ? 'institution@domain.ac.za'
+                                  : 'business@company.co.za'
                               : 'Enter your email',
                       prefixIcon: Icons.email_outlined,
                       hasError: _emailError,
@@ -187,7 +189,8 @@ class _LoginPageState extends State<LoginPage> {
                       _label(switch (_organisationType) {
                         'accommodation' => 'Accommodation Provider Name',
                         'psha' => 'Association Name',
-                        _ => 'Institution Name',
+                        'university' => 'Institution Name',
+                        _ => 'Business Name',
                       }),
                       const SizedBox(height: 6),
                       _InputField(
@@ -195,12 +198,14 @@ class _LoginPageState extends State<LoginPage> {
                         hint: switch (_organisationType) {
                           'accommodation' => 'e.g. Urban Student Living',
                           'psha' => 'Private Student Housing Association',
-                          _ => 'e.g. University of Cape Town',
+                          'university' => 'e.g. University of Cape Town',
+                          _ => 'e.g. Gude Business Solutions',
                         },
                         prefixIcon: switch (_organisationType) {
                           'accommodation' => Icons.apartment_outlined,
                           'psha' => Icons.hub_outlined,
-                          _ => Icons.business_outlined,
+                          'university' => Icons.account_balance_outlined,
+                          _ => Icons.business_center_outlined,
                         },
                         hasError: _institutionNameError,
                         onChanged: () => setState(
@@ -208,7 +213,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       if (_institutionNameError)
-                        const _ErrorText('Organisation name is required'),
+                        const _ErrorText('Business name is required'),
                       const SizedBox(height: 14),
                     ],
                     Row(
@@ -266,7 +271,7 @@ class _LoginPageState extends State<LoginPage> {
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           elevation: 4,
-                          shadowColor: _C.primary.withOpacity(0.4),
+                          shadowColor: _C.primary.withValues(alpha: 0.4),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14)),
                         ),
@@ -276,7 +281,7 @@ class _LoginPageState extends State<LoginPage> {
                               ? switch (_organisationType) {
                                   'accommodation' => 'Open Provider Workspace',
                                   'psha' => 'Open PSHA Admin',
-                                  _ => 'Log in as Institution',
+                                  _ => 'Log in to Business Workspace',
                                 }
                               : _userType == 'buyer'
                                   ? 'Log in as Buyer'
@@ -360,6 +365,12 @@ class _HeroSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final title = switch (userType) {
+      'institution' => 'Business\nsign in',
+      'buyer' => 'Buyer\nsign in',
+      _ => 'Student\nsign in',
+    };
+
     return Container(
       width: double.infinity,
       height: 220,
@@ -384,7 +395,7 @@ class _HeroSection extends StatelessWidget {
               height: 140,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.07),
+                color: Colors.white.withValues(alpha: 0.07),
               ),
             ),
           ),
@@ -396,7 +407,7 @@ class _HeroSection extends StatelessWidget {
               height: 90,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.06),
+                color: Colors.white.withValues(alpha: 0.06),
               ),
             ),
           ),
@@ -412,9 +423,9 @@ class _HeroSection extends StatelessWidget {
                       children: [
                         GudeLockup(logoSize: 30, textColor: Colors.white),
                         const Spacer(),
-                        const Text(
-                          'Welcome\nBack',
-                          style: TextStyle(
+                        Text(
+                          title,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 32,
                             fontWeight: FontWeight.w900,
@@ -430,7 +441,10 @@ class _HeroSection extends StatelessWidget {
                                     'Support residents, create work and measure engagement.',
                                   'psha' =>
                                     'Manage member buildings and measure sector impact.',
-                                  _ => 'Post jobs and find talented students.',
+                                  'university' =>
+                                    'Post opportunities and connect with student talent.',
+                                  _ =>
+                                    'Build your team and connect with student talent.',
                                 }
                               : userType == 'buyer'
                                   ? 'Access services from talented students.'
@@ -449,11 +463,19 @@ class _HeroSection extends StatelessWidget {
                     width: 100,
                     height: 120,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.12),
+                      color: Colors.white.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Center(
-                      child: Text('🧑‍🎓', style: TextStyle(fontSize: 52)),
+                    child: Center(
+                      child: Icon(
+                        switch (userType) {
+                          'institution' => Icons.business_center_rounded,
+                          'buyer' => Icons.shopping_cart_rounded,
+                          _ => Icons.school_rounded,
+                        },
+                        color: Colors.white,
+                        size: 52,
+                      ),
                     ),
                   ),
                 ],
@@ -466,11 +488,11 @@ class _HeroSection extends StatelessWidget {
   }
 }
 
-class _OrganisationTypeSelector extends StatelessWidget {
+class _BusinessTypeSelector extends StatelessWidget {
   final String selected;
   final ValueChanged<String> onChanged;
 
-  const _OrganisationTypeSelector({
+  const _BusinessTypeSelector({
     required this.selected,
     required this.onChanged,
   });
@@ -481,7 +503,7 @@ class _OrganisationTypeSelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Organisation type',
+          'Business type',
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
@@ -489,29 +511,110 @@ class _OrganisationTypeSelector extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 7),
-        SegmentedButton<String>(
-          segments: const [
-            ButtonSegment(
+        DropdownButtonFormField<String>(
+          initialValue: selected,
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: _C.inputBg,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _C.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _C.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _C.focusBorder, width: 1.5),
+            ),
+          ),
+          items: const [
+            DropdownMenuItem(
               value: 'university',
-              icon: Icon(Icons.account_balance_outlined),
-              label: Text('University'),
+              child: _BusinessTypeOption(
+                icon: Icons.account_balance_outlined,
+                label: 'University or college',
+              ),
             ),
-            ButtonSegment(
+            DropdownMenuItem(
               value: 'accommodation',
-              icon: Icon(Icons.apartment_outlined),
-              label: Text('Housing'),
+              child: _BusinessTypeOption(
+                icon: Icons.apartment_outlined,
+                label: 'Student accommodation',
+              ),
             ),
-            ButtonSegment(
+            DropdownMenuItem(
               value: 'psha',
-              icon: Icon(Icons.hub_outlined),
-              label: Text('PSHA'),
+              child: _BusinessTypeOption(
+                icon: Icons.hub_outlined,
+                label: 'PSHA / housing association',
+              ),
+            ),
+            DropdownMenuItem(
+              value: 'company',
+              child: _BusinessTypeOption(
+                icon: Icons.business_center_outlined,
+                label: 'Private company',
+              ),
+            ),
+            DropdownMenuItem(
+              value: 'bank',
+              child: _BusinessTypeOption(
+                icon: Icons.account_balance_wallet_outlined,
+                label: 'Bank / financial services',
+              ),
+            ),
+            DropdownMenuItem(
+              value: 'ngo',
+              child: _BusinessTypeOption(
+                icon: Icons.volunteer_activism_outlined,
+                label: 'NGO / nonprofit',
+              ),
+            ),
+            DropdownMenuItem(
+              value: 'public-sector',
+              child: _BusinessTypeOption(
+                icon: Icons.account_balance_outlined,
+                label: 'Government / public sector',
+              ),
             ),
           ],
-          selected: {selected},
-          onSelectionChanged: (values) => onChanged(values.first),
-          showSelectedIcon: false,
-          style: const ButtonStyle(
-            visualDensity: VisualDensity.compact,
+          onChanged: (value) {
+            if (value != null) onChanged(value);
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _BusinessTypeOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _BusinessTypeOption({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 19, color: _C.primary),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: _C.dark,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
@@ -535,45 +638,79 @@ class _RoleToggle extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _tab('student', '🎓 Student'),
-          _tab('institution', '🏛️ Institution'),
-          _tab('buyer', '🛒 Buyer'),
+          _tab('student'),
+          _tab('institution'),
+          _tab('buyer'),
         ],
       ),
     );
   }
 
-  Widget _tab(String role, String label) {
+  Widget _tab(String role) {
     final isSelected = selected == role;
+    final isDimmed = selected == 'institution' && !isSelected;
+    final displayLabel = switch (role) {
+      'institution' => 'Businesses',
+      'buyer' => 'Buyer',
+      _ => 'Student',
+    };
+    final icon = switch (role) {
+      'institution' => Icons.business_center_outlined,
+      'buyer' => Icons.shopping_cart_outlined,
+      _ => Icons.school_outlined,
+    };
+
     return Expanded(
-      child: GestureDetector(
-        onTap: () => onChanged(role),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(9),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    )
-                  ]
-                : [],
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: isSelected
-                    ? const Color(0xFF1A1A1A)
-                    : const Color(0xFF888888),
-              ),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 220),
+        opacity: isDimmed ? 0.35 : 1,
+        child: GestureDetector(
+          onTap: () => onChanged(role),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? role == 'institution'
+                      ? _C.primary.withValues(alpha: 0.08)
+                      : Colors.white
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(9),
+              border: isSelected && role == 'institution'
+                  ? Border.all(color: _C.primary.withValues(alpha: 0.22))
+                  : null,
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      )
+                    ]
+                  : [],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 17,
+                  color: isSelected ? _C.primary : _C.grey,
+                ),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    displayLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected ? _C.dark : _C.grey,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -611,7 +748,7 @@ class _InputField extends StatelessWidget {
         hintStyle: const TextStyle(color: Color(0xFFBBBBBB), fontSize: 13),
         prefixIcon: Icon(prefixIcon, color: const Color(0xFFBBBBBB), size: 20),
         filled: true,
-        fillColor: hasError ? _C.errorRed.withOpacity(0.04) : _C.inputBg,
+        fillColor: hasError ? _C.errorRed.withValues(alpha: 0.04) : _C.inputBg,
         contentPadding:
             const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
         border: OutlineInputBorder(
@@ -668,7 +805,7 @@ class _PasswordField extends StatelessWidget {
           onPressed: onToggle,
         ),
         filled: true,
-        fillColor: hasError ? _C.errorRed.withOpacity(0.04) : _C.inputBg,
+        fillColor: hasError ? _C.errorRed.withValues(alpha: 0.04) : _C.inputBg,
         contentPadding:
             const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
         border: OutlineInputBorder(
@@ -736,7 +873,10 @@ class _SocialBtn extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFFEEEEEE)),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 6,
+            ),
           ],
         ),
         child: Icon(icon, size: 22, color: const Color(0xFF444444)),

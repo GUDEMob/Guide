@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:gude_app/features/accommodation/presentation/accommodation_ui.dart';
 import 'package:gude_app/features/psha/data/psha_portal_store.dart';
+import 'package:gude_app/features/psha/presentation/psha_ui.dart';
 
 class PshaImpactPage extends StatelessWidget {
   const PshaImpactPage({super.key});
@@ -11,17 +12,21 @@ class PshaImpactPage extends StatelessWidget {
     final store = PshaPortalStore.instance;
     final number = NumberFormat.decimalPattern();
     return Scaffold(
-      backgroundColor: AccommodationColors.canvas,
+      backgroundColor: PshaColors.canvas,
       body: SafeArea(
         bottom: false,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 96),
           children: [
             PortalPageHeader(
               eyebrow: 'Sector intelligence',
               title: 'Student success impact',
               subtitle:
                   'Aggregated, privacy-conscious outcomes across PSHA members.',
+              icon: Icons.insights_rounded,
+              accent: PshaColors.primary,
+              secondary: PshaColors.teal,
+              backRoute: '/psha/overview',
               action: IconButton.filledTonal(
                 tooltip: 'Export impact report',
                 onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
@@ -30,14 +35,29 @@ class PshaImpactPage extends StatelessWidget {
                   ),
                 ),
                 icon: const Icon(Icons.download_outlined),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: PshaColors.primary,
+                ),
               ),
             ),
             const SizedBox(height: 18),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AccommodationColors.primary,
-                borderRadius: BorderRadius.circular(10),
+                gradient: const LinearGradient(
+                  colors: [PshaColors.deep, PshaColors.primary],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: PshaColors.primary.withValues(alpha: 0.2),
+                    blurRadius: 18,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,28 +111,28 @@ class PshaImpactPage extends StatelessWidget {
                   label: 'Work opportunities',
                   change: '+18% this quarter',
                   icon: Icons.work_outline_rounded,
-                  color: AccommodationColors.orange,
+                  color: PshaColors.amber,
                 ),
                 const _OutcomeTile(
                   value: '1,284',
                   label: 'Verified experiences',
                   change: '+236 this quarter',
                   icon: Icons.verified_outlined,
-                  color: AccommodationColors.blue,
+                  color: PshaColors.blue,
                 ),
                 const _OutcomeTile(
                   value: '4,960',
                   label: 'Survey responses',
                   change: '42% response rate',
                   icon: Icons.poll_outlined,
-                  color: AccommodationColors.green,
+                  color: PshaColors.teal,
                 ),
                 _OutcomeTile(
                   value: '${store.averageEngagement}%',
                   label: 'Active engagement',
                   change: '+6 points',
                   icon: Icons.insights_rounded,
-                  color: AccommodationColors.primary,
+                  color: PshaColors.primary,
                 ),
               ],
             ),
@@ -134,8 +154,8 @@ class PshaImpactPage extends StatelessWidget {
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AccommodationColors.line),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: PshaColors.line),
               ),
               child: const Column(
                 children: [
@@ -187,8 +207,8 @@ class _OutcomeTile extends StatelessWidget {
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AccommodationColors.line),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: PshaColors.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,8 +254,8 @@ class _RegionRow extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AccommodationColors.line),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: PshaColors.line),
       ),
       child: Column(
         children: [
@@ -266,8 +286,8 @@ class _RegionRow extends StatelessWidget {
             value: progress,
             minHeight: 5,
             borderRadius: BorderRadius.circular(5),
-            color: AccommodationColors.blue,
-            backgroundColor: AccommodationColors.blue.withValues(alpha: 0.1),
+            color: PshaColors.primary,
+            backgroundColor: PshaColors.primary.withValues(alpha: 0.1),
           ),
         ],
       ),
@@ -287,7 +307,7 @@ class _ReadinessRow extends StatelessWidget {
     return ListTile(
       leading: Icon(
         ready ? Icons.check_circle_rounded : Icons.schedule_rounded,
-        color: ready ? AccommodationColors.green : AccommodationColors.orange,
+        color: ready ? PshaColors.primary : PshaColors.amber,
       ),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
       subtitle: Text(detail),

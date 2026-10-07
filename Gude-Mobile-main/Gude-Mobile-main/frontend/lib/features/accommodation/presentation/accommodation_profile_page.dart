@@ -48,20 +48,61 @@ class _AccommodationProfilePageState extends State<AccommodationProfilePage> {
       body: SafeArea(
         bottom: false,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 96),
           children: [
             PortalPageHeader(
               eyebrow: 'Provider account',
               title: 'Profile',
               subtitle: 'Manage your organisation and connected residences.',
+              icon: Icons.apartment_rounded,
+              accent: AccommodationColors.green,
+              secondary: AccommodationColors.blue,
+              backRoute: '/accommodation/overview',
               action: IconButton.filledTonal(
                 tooltip: editing ? 'Save profile' : 'Edit profile',
                 onPressed: _toggleEditing,
                 icon: Icon(editing ? Icons.save_outlined : Icons.edit_outlined),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: AccommodationColors.green,
+                ),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
             _ProviderSummary(store: store),
+            const SizedBox(height: 14),
+            PortalSummaryBand(
+              colors: const [
+                AccommodationColors.green,
+                AccommodationColors.blue,
+              ],
+              items: [
+                PortalSummaryItem(
+                  value: '${store.residences.length}',
+                  label: 'Residences',
+                  icon: Icons.apartment_rounded,
+                  onTap: () => _showMessage(
+                    '${store.residences.length} residences connected.',
+                  ),
+                ),
+                PortalSummaryItem(
+                  value: '${store.residentCount}',
+                  label: 'Residents',
+                  icon: Icons.groups_2_rounded,
+                  onTap: () => _showMessage(
+                    '${store.residentCount} residents currently reached.',
+                  ),
+                ),
+                PortalSummaryItem(
+                  value: '${store.engagementRate}%',
+                  label: 'Engagement',
+                  icon: Icons.insights_rounded,
+                  onTap: () => _showMessage(
+                    'Monthly engagement is ${store.engagementRate}%.',
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 20),
             const PortalSectionTitle('Organisation details'),
             const SizedBox(height: 10),
@@ -78,45 +119,29 @@ class _AccommodationProfilePageState extends State<AccommodationProfilePage> {
               trailing: '${store.residences.length} connected',
             ),
             const SizedBox(height: 10),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AccommodationColors.line),
+            for (var i = 0; i < store.residences.length; i++) ...[
+              _ResidenceCard(
+                name: store.residences[i],
+                residents: store.beds
+                    .where(
+                      (bed) =>
+                          bed.residence == store.residences[i] && bed.occupied,
+                    )
+                    .length,
+                status: i == 0 ? 'Primary residence' : 'Active',
+                onSettings: () => _showMessage(
+                  '${store.residences[i]} settings selected.',
+                ),
               ),
-              child: Column(
-                children: [
-                  for (var i = 0; i < store.residences.length; i++)
-                    ListTile(
-                      leading: const Icon(
-                        Icons.apartment_rounded,
-                        color: AccommodationColors.blue,
-                      ),
-                      title: Text(
-                        store.residences[i],
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                      subtitle: Text(i == 0
-                          ? '486 residents  |  Primary residence'
-                          : '356 residents  |  Active'),
-                      trailing: IconButton(
-                        tooltip: 'Residence settings',
-                        onPressed: () => _showMessage(
-                          '${store.residences[i]} settings selected.',
-                        ),
-                        icon: const Icon(Icons.settings_outlined),
-                      ),
-                    ),
-                ],
-              ),
-            ),
+              if (i < store.residences.length - 1) const SizedBox(height: 9),
+            ],
             const SizedBox(height: 20),
             const PortalSectionTitle('Notifications'),
             const SizedBox(height: 10),
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: AccommodationColors.line),
               ),
               child: Column(
@@ -150,7 +175,7 @@ class _AccommodationProfilePageState extends State<AccommodationProfilePage> {
                 minimumSize: const Size.fromHeight(48),
                 side: const BorderSide(color: AccommodationColors.line),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
             ),
@@ -166,7 +191,7 @@ class _AccommodationProfilePageState extends State<AccommodationProfilePage> {
                   color: AccommodationColors.primary.withValues(alpha: 0.25),
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
             ),
@@ -242,8 +267,22 @@ class _ProviderSummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AccommodationColors.ink,
-        borderRadius: BorderRadius.circular(10),
+        gradient: const LinearGradient(
+          colors: [
+            AccommodationColors.green,
+            AccommodationColors.blue,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AccommodationColors.blue.withValues(alpha: 0.18),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -252,7 +291,7 @@ class _ProviderSummary extends StatelessWidget {
             height: 52,
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(Icons.apartment_rounded, color: Colors.white),
           ),
@@ -277,7 +316,116 @@ class _ProviderSummary extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Icons.verified_rounded, color: AccommodationColors.green),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.verified_rounded, color: Colors.white, size: 17),
+                SizedBox(width: 5),
+                Text(
+                  'Verified',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ResidenceCard extends StatelessWidget {
+  final String name;
+  final int residents;
+  final String status;
+  final VoidCallback onSettings;
+
+  const _ResidenceCard({
+    required this.name,
+    required this.residents,
+    required this.status,
+    required this.onSettings,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AccommodationColors.line),
+        boxShadow: [
+          BoxShadow(
+            color: AccommodationColors.ink.withValues(alpha: 0.035),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AccommodationColors.blue.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: const Icon(
+              Icons.apartment_rounded,
+              color: AccommodationColors.blue,
+            ),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AccommodationColors.ink,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  '$residents residents  |  $status',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AccommodationColors.muted,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton.filledTonal(
+            tooltip: 'Residence settings',
+            onPressed: onSettings,
+            icon: const Icon(Icons.settings_outlined, size: 19),
+            style: IconButton.styleFrom(
+              foregroundColor: AccommodationColors.green,
+              backgroundColor: AccommodationColors.green.withValues(alpha: 0.1),
+            ),
+          ),
         ],
       ),
     );
@@ -343,7 +491,7 @@ class _DetailsPanel extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AccommodationColors.line),
       ),
       child: Column(
@@ -372,10 +520,18 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(13),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
       child: Row(
         children: [
-          Icon(icon, size: 19, color: AccommodationColors.muted),
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: AccommodationColors.green.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 18, color: AccommodationColors.green),
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(

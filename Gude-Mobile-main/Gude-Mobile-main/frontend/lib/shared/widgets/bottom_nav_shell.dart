@@ -26,6 +26,12 @@ class BottomNavShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final active = _activeIndex(context);
+    const accents = [
+      Color(0xFFE30613),
+      Color(0xFF0866E9),
+      Color(0xFF202126),
+      Color(0xFF0866E9)
+    ];
     return Scaffold(
       body: WalkthroughOverlay(child: child),
       bottomNavigationBar: SafeArea(
@@ -52,16 +58,14 @@ class BottomNavShell extends StatelessWidget {
                             horizontal: sel ? 14 : 6, vertical: 4),
                         decoration: BoxDecoration(
                           color: sel
-                              ? const Color(0xFFFFE8EB)
+                              ? accents[i].withOpacity(0.10)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Icon(
                           sel ? tab.activeIcon : tab.icon,
                           size: 21,
-                          color: sel
-                              ? const Color(0xFFE30613)
-                              : const Color(0xFF888888),
+                          color: sel ? accents[i] : const Color(0xFF888888),
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -70,9 +74,7 @@ class BottomNavShell extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 9,
                           fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
-                          color: sel
-                              ? const Color(0xFFE30613)
-                              : const Color(0xFF888888),
+                          color: sel ? accents[i] : const Color(0xFF888888),
                         ),
                       ),
                     ],

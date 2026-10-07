@@ -130,8 +130,7 @@ class _HomePageState extends State<HomePage> {
           _walletService.awardGudePoints(
             10,
             'Logged an expense',
-            activityId:
-                'expense_${DateTime.now().millisecondsSinceEpoch}',
+            activityId: 'expense_${DateTime.now().millisecondsSinceEpoch}',
           );
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -255,6 +254,31 @@ class _HomePageState extends State<HomePage> {
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(children: [
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 14),
+                  child: Row(children: [
+                    Expanded(
+                        child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Student life, unlocked.',
+                            style: TextStyle(
+                                color: AppColors.textDark,
+                                fontSize: 23,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.7)),
+                        SizedBox(height: 3),
+                        Text('Earn. Save. Make your next move.',
+                            style: TextStyle(
+                                color: AppColors.textGrey, fontSize: 12)),
+                      ],
+                    )),
+                    CircleAvatar(
+                        backgroundColor: Color(0xFFFFE4E8),
+                        child:
+                            Icon(Icons.bolt_rounded, color: AppColors.primary)),
+                  ]),
+                ),
                 // ── 1. Account card ────────────────────────────
                 _HomeWalletCard(
                   balance: _balance,
@@ -281,7 +305,7 @@ class _HomePageState extends State<HomePage> {
                   onTap: () => context.push('/challenges'),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 8),
               ]),
             ),
           ),
@@ -331,16 +355,19 @@ class _AskGudeLauncher extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               const Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('What can Gude help with?',
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textDark)),
-                  SizedBox(height: 2),
-                  Text('Money, Market, support and student life',
-                      style: TextStyle(fontSize: 11, color: AppColors.textGrey)),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('What can Gude help with?',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textDark)),
+                      SizedBox(height: 2),
+                      Text('Money, Market, support and student life',
+                          style: TextStyle(
+                              fontSize: 11, color: AppColors.textGrey)),
+                    ]),
               ),
               const CircleAvatar(
                 radius: 17,
@@ -413,15 +440,18 @@ class _HomeWalletCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 9),
                 const Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('Gude Wallet',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800)),
-                    Text('Marketplace earnings',
-                        style: TextStyle(color: Colors.white70, fontSize: 10)),
-                  ]),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Gude Wallet',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800)),
+                        Text('Marketplace earnings',
+                            style:
+                                TextStyle(color: Colors.white70, fontSize: 10)),
+                      ]),
                 ),
                 const Text('VIEW WALLET',
                     style: TextStyle(
@@ -481,7 +511,8 @@ class _HomeWalletCard extends StatelessWidget {
 class _WalletMetric extends StatelessWidget {
   final IconData icon;
   final String value, label;
-  const _WalletMetric({required this.icon, required this.value, required this.label});
+  const _WalletMetric(
+      {required this.icon, required this.value, required this.label});
 
   @override
   Widget build(BuildContext context) => Container(
@@ -494,7 +525,8 @@ class _WalletMetric extends StatelessWidget {
           Icon(icon, color: const Color(0xFFFFD166), size: 17),
           const SizedBox(width: 7),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -544,22 +576,22 @@ class _AccountCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
-        children: [
-          // "My Account -->"
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Text(
-                'Gude Wallet',
-                style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.2),
-              ),
-              SizedBox(width: 8),
-            ],
-          ),
+          children: [
+            // "My Account -->"
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Text(
+                  'Gude Wallet',
+                  style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2),
+                ),
+                SizedBox(width: 8),
+              ],
+            ),
 
             const SizedBox(height: 12),
 
@@ -592,6 +624,13 @@ class _AccountCard extends StatelessWidget {
 
             const SizedBox(height: 8),
 
+            const Text(
+              'Earned from your Gude sales and services',
+              style: TextStyle(color: Colors.white70, fontSize: 11),
+            ),
+
+            const SizedBox(height: 8),
+
             // Days left pill — centered
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -608,49 +647,27 @@ class _AccountCard extends StatelessWidget {
                     fontWeight: FontWeight.w600),
               ),
             ),
+            const SizedBox(height: 7),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD166).withOpacity(0.18),
+                borderRadius: BorderRadius.circular(20),
+                border:
+                    Border.all(color: const Color(0xFFFFD166).withOpacity(0.5)),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.stars_rounded,
+                    color: Color(0xFFFFD166), size: 15),
+                const SizedBox(width: 5),
+                Text('$points Gude Points',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800)),
+              ]),
+            ),
           ],
-          const Text(
-            'Earned from your Gude sales and services',
-            style: TextStyle(color: Colors.white70, fontSize: 11),
-          ),
-
-          const SizedBox(height: 8),
-
-          // Days left pill — centered
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white24),
-            ),
-            child: Text(
-              '⏳  $daysLeft days left this month',
-              style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600),
-            ),
-          ),
-          const SizedBox(height: 7),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFD166).withOpacity(0.18),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFFFD166).withOpacity(0.5)),
-            ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.stars_rounded, color: Color(0xFFFFD166), size: 15),
-              const SizedBox(width: 5),
-              Text('$points Gude Points',
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800)),
-            ]),
-          ),
-        ],
         ),
       ),
     );
@@ -667,10 +684,34 @@ class _DiscoveryChallenges extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const challenges = [
-      ('\u{1F4B0}', 'Survive till Month-End', 'R104 daily budget', 0.58, AppColors.primary),
-      ('\u{1F680}', 'Save R500 This Month', 'R215 saved so far', 0.43, _ExtraColors.green),
-      ('\u{1F4E6}', 'Leftover Challenge', 'Keep R200 by month-end', 0.25, _ExtraColors.blue),
-      ('\u{23F3}', 'NSFAS Survival Plan', 'Build an emergency plan', 0.15, _ExtraColors.amber),
+      (
+        '\u{1F4B0}',
+        'Survive till Month-End',
+        'R104 daily budget',
+        0.58,
+        AppColors.primary
+      ),
+      (
+        '\u{1F680}',
+        'Save R500 This Month',
+        'R215 saved so far',
+        0.43,
+        _ExtraColors.green
+      ),
+      (
+        '\u{1F4E6}',
+        'Leftover Challenge',
+        'Keep R200 by month-end',
+        0.25,
+        _ExtraColors.blue
+      ),
+      (
+        '\u{23F3}',
+        'NSFAS Survival Plan',
+        'Build an emergency plan',
+        0.15,
+        _ExtraColors.amber
+      ),
     ];
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -712,52 +753,57 @@ class _DiscoveryChallenges extends StatelessWidget {
                         offset: const Offset(0, 5)),
                   ],
                 ),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                          color: color.withOpacity(0.10),
-                          borderRadius: BorderRadius.circular(12)),
-                      child: Center(child: Text(emoji,
-                          style: const TextStyle(fontSize: 19))),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                          color: color.withOpacity(0.10),
-                          borderRadius: BorderRadius.circular(20)),
-                      child: Text('+100 pts',
-                          style: TextStyle(
-                              color: color,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800)),
-                    ),
-                  ]),
-                  const SizedBox(height: 10),
-                  Text(title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textDark)),
-                  const SizedBox(height: 2),
-                  Text(subtitle,
-                      style: const TextStyle(fontSize: 10, color: AppColors.textGrey)),
-                  const Spacer(),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 6,
-                      backgroundColor: color.withOpacity(0.10),
-                      valueColor: AlwaysStoppedAnimation<Color>(color),
-                    ),
-                  ),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                              color: color.withOpacity(0.10),
+                              borderRadius: BorderRadius.circular(12)),
+                          child: Center(
+                              child: Text(emoji,
+                                  style: const TextStyle(fontSize: 19))),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                              color: color.withOpacity(0.10),
+                              borderRadius: BorderRadius.circular(20)),
+                          child: Text('+100 pts',
+                              style: TextStyle(
+                                  color: color,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800)),
+                        ),
+                      ]),
+                      const SizedBox(height: 10),
+                      Text(title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textDark)),
+                      const SizedBox(height: 2),
+                      Text(subtitle,
+                          style: const TextStyle(
+                              fontSize: 10, color: AppColors.textGrey)),
+                      const Spacer(),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 6,
+                          backgroundColor: color.withOpacity(0.10),
+                          valueColor: AlwaysStoppedAnimation<Color>(color),
+                        ),
+                      ),
+                    ]),
               ),
             );
           },
@@ -908,32 +954,35 @@ class _QuickActionsSection extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                     color: AppColors.textDark)),
             Row(children: [
-            const Icon(Icons.swipe_rounded, size: 15, color: AppColors.textGrey),
-            const SizedBox(width: 4),
-            const Text('Swipe',
-                style: TextStyle(fontSize: 10, color: AppColors.textGrey)),
-            const SizedBox(width: 9),
-            GestureDetector(
-              onTap: onCustomise,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+              const Icon(Icons.swipe_rounded,
+                  size: 15, color: AppColors.textGrey),
+              const SizedBox(width: 4),
+              const Text('Swipe',
+                  style: TextStyle(fontSize: 10, color: AppColors.textGrey)),
+              const SizedBox(width: 9),
+              GestureDetector(
+                onTap: onCustomise,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(20),
+                    border:
+                        Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  ),
+                  child: const Row(children: [
+                    Icon(Icons.tune_rounded,
+                        size: 13, color: AppColors.primary),
+                    SizedBox(width: 4),
+                    Text('Customise',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600)),
+                  ]),
                 ),
-                child: const Row(children: [
-                  Icon(Icons.tune_rounded, size: 13, color: AppColors.primary),
-                  SizedBox(width: 4),
-                  Text('Customise',
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600)),
-                ]),
               ),
-            ),
             ]),
           ],
         ),
@@ -1007,7 +1056,10 @@ class _QuickActionTile extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: color.withOpacity(0.09),
+          gradient: LinearGradient(
+              colors: [color.withOpacity(0.17), color.withOpacity(0.04)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: color.withOpacity(0.20)),
           boxShadow: [
@@ -1024,9 +1076,16 @@ class _QuickActionTile extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12)),
-              child: Icon(icon, color: color, size: 22),
+                  gradient:
+                      LinearGradient(colors: [color, color.withOpacity(0.78)]),
+                  boxShadow: [
+                    BoxShadow(
+                        color: color.withOpacity(0.25),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4))
+                  ],
+                  borderRadius: BorderRadius.circular(15)),
+              child: Icon(icon, color: Colors.white, size: 25),
             ),
             const SizedBox(height: 7),
             Text(label,
@@ -1081,80 +1140,83 @@ class _CustomiseSheetState extends State<_CustomiseSheet> {
         ),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
         child: Column(children: [
-        Center(
-          child: Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-                color: AppColors.inputBorder,
-                borderRadius: BorderRadius.circular(2)),
-          ),
-        ),
-        const SizedBox(height: 16),
-        const Text('Customise Quick Actions',
-            style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textDark)),
-        const SizedBox(height: 4),
-        const Text('Select the actions you want on your home screen',
-            style: TextStyle(fontSize: 12, color: AppColors.textGrey)),
-        const SizedBox(height: 12),
-        Expanded(
-          child: ListView.builder(
-            itemCount: widget.all.length,
-            itemBuilder: (_, index) {
-              final qa = widget.all[index];
-              final isOn = _selected.contains(qa.label);
-              return ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                      color: qa.color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10)),
-                  child: Icon(qa.icon, color: qa.color, size: 20),
-                ),
-                title: Text(qa.label,
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textDark)),
-                trailing: Switch(
-                  value: isOn,
-                  activeColor: AppColors.primary,
-                  onChanged: (_) => setState(() {
-                    isOn ? _selected.remove(qa.label) : _selected.add(qa.label);
-                  }),
-                ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () {
-              final result =
-                  widget.all.where((a) => _selected.contains(a.label)).toList();
-              widget.onSave(result);
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.textDark,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 15),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14)),
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: AppColors.inputBorder,
+                  borderRadius: BorderRadius.circular(2)),
             ),
-            child: const Text('Save',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
           ),
-        ),
+          const SizedBox(height: 16),
+          const Text('Customise Quick Actions',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textDark)),
+          const SizedBox(height: 4),
+          const Text('Select the actions you want on your home screen',
+              style: TextStyle(fontSize: 12, color: AppColors.textGrey)),
+          const SizedBox(height: 12),
+          Expanded(
+            child: ListView.builder(
+              itemCount: widget.all.length,
+              itemBuilder: (_, index) {
+                final qa = widget.all[index];
+                final isOn = _selected.contains(qa.label);
+                return ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                        color: qa.color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10)),
+                    child: Icon(qa.icon, color: qa.color, size: 20),
+                  ),
+                  title: Text(qa.label,
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textDark)),
+                  trailing: Switch(
+                    value: isOn,
+                    activeColor: AppColors.primary,
+                    onChanged: (_) => setState(() {
+                      isOn
+                          ? _selected.remove(qa.label)
+                          : _selected.add(qa.label);
+                    }),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                final result = widget.all
+                    .where((a) => _selected.contains(a.label))
+                    .toList();
+                widget.onSave(result);
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.textDark,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+              ),
+              child: const Text('Save',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+            ),
+          ),
         ]),
       ),
     );

@@ -13,7 +13,15 @@ class AccommodationCommunityPage extends StatefulWidget {
 class _AccommodationCommunityPageState
     extends State<AccommodationCommunityPage> {
   final store = AccommodationPortalStore.instance;
+  final _searchController = TextEditingController();
   CommunityPostType? selectedType;
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,16 +39,21 @@ class _AccommodationCommunityPageState
         child: AnimatedBuilder(
           animation: store,
           builder: (context, _) {
-            final visible = selectedType == null
-                ? store.communityPosts
-                : store.communityPosts
-                    .where((post) => post.type == selectedType)
-                    .toList();
+            final query = _query.trim().toLowerCase();
+            final visible = store.communityPosts.where((post) {
+              final matchesType =
+                  selectedType == null || post.type == selectedType;
+              final matchesQuery = query.isEmpty ||
+                  post.title.toLowerCase().contains(query) ||
+                  post.detail.toLowerCase().contains(query) ||
+                  post.audience.toLowerCase().contains(query);
+              return matchesType && matchesQuery;
+            }).toList();
             return CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -49,9 +62,49 @@ class _AccommodationCommunityPageState
                           title: 'Community',
                           subtitle:
                               'Keep residents informed, involved and heard.',
+                          icon: Icons.campaign_rounded,
+                          accent: AccommodationColors.green,
+                          secondary: AccommodationColors.blue,
+                          backRoute: '/accommodation/overview',
                         ),
-                        const SizedBox(height: 18),
-                        _EngagementBand(store: store),
+                        const SizedBox(height: 14),
+                        PortalSearchBar(
+                          controller: _searchController,
+                          hint: 'Search notices, events or surveys',
+                          accent: AccommodationColors.green,
+                          onChanged: (value) => setState(() => _query = value),
+                        ),
+                        const SizedBox(height: 14),
+                        PortalSummaryBand(
+                          colors: const [
+                            AccommodationColors.green,
+                            AccommodationColors.blue,
+                          ],
+                          items: [
+                            PortalSummaryItem(
+                              value: '${store.communityPosts.length}',
+                              label: 'Updates',
+                              icon: Icons.campaign_rounded,
+                              onTap: () => setState(() => selectedType = null),
+                            ),
+                            PortalSummaryItem(
+                              value: '${store.residentCount}',
+                              label: 'Residents',
+                              icon: Icons.groups_2_rounded,
+                              onTap: () => _showMetric(
+                                '${store.residentCount} residents are connected to this community.',
+                              ),
+                            ),
+                            PortalSummaryItem(
+                              value: '${store.engagementRate}%',
+                              label: 'Engagement',
+                              icon: Icons.insights_rounded,
+                              onTap: () => _showMetric(
+                                'Monthly resident engagement is ${store.engagementRate}%.',
+                              ),
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 16),
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
@@ -78,7 +131,7 @@ class _AccommodationCommunityPageState
                         ),
                         const SizedBox(height: 18),
                         PortalSectionTitle(
-                          'Published content',
+                          'Notice board',
                           trailing: '${visible.length} items',
                         ),
                         const SizedBox(height: 10),
@@ -86,18 +139,24 @@ class _AccommodationCommunityPageState
                     ),
                   ),
                 ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _CommunityCard(post: visible[index]),
+                if (visible.isEmpty)
+                  const SliverPadding(
+                    padding: EdgeInsets.fromLTRB(16, 0, 16, 96),
+                    sliver: SliverToBoxAdapter(child: _EmptyCommunityState()),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _CommunityCard(post: visible[index]),
+                        ),
+                        childCount: visible.length,
                       ),
-                      childCount: visible.length,
                     ),
                   ),
-                ),
               ],
             );
           },
@@ -120,51 +179,37 @@ class _AccommodationCommunityPageState
       );
     }
   }
+
+  void _showMetric(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
 }
 
-class _EngagementBand extends StatelessWidget {
-  final AccommodationPortalStore store;
-
-  const _EngagementBand({required this.store});
+class _EmptyCommunityState extends StatelessWidget {
+  const _EmptyCommunityState();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 28),
       decoration: BoxDecoration(
-        color: AccommodationColors.ink,
-        borderRadius: BorderRadius.circular(10),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AccommodationColors.line),
       ),
-      child: Row(
+      child: const Column(
         children: [
-          const Icon(Icons.insights_rounded, color: Colors.white),
-          const SizedBox(width: 10),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Resident engagement',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Residents active across notices, events and surveys',
-                  style: TextStyle(color: Colors.white70, fontSize: 10),
-                ),
-              ],
-            ),
-          ),
+          Icon(Icons.search_off_rounded, color: AccommodationColors.muted),
+          SizedBox(height: 7),
           Text(
-            '${store.engagementRate}%',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
+            'No published content matches these filters.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AccommodationColors.muted,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -213,7 +258,7 @@ class _CommunityCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AccommodationColors.line),
       ),
       child: Column(
@@ -425,7 +470,7 @@ class _CreateCommunitySheetState extends State<_CreateCommunitySheet> {
                   foregroundColor: Colors.white,
                   minimumSize: const Size.fromHeight(50),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
               ),

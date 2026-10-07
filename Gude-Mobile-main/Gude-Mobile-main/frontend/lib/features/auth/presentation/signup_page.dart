@@ -79,9 +79,11 @@ class _SignupPageState extends State<SignupPage> {
       userService.institutionName = _institutionName.text.trim();
       userService.role = 'institution';
       userService.organisationType = _organisationType;
-      context.go(_organisationType == 'accommodation'
-          ? '/accommodation/overview'
-          : '/institution/marketplace');
+      context.go(switch (_organisationType) {
+        'accommodation' => '/accommodation/overview',
+        'psha' => '/psha/overview',
+        _ => '/institution/marketplace',
+      });
     } else if (_userType == 'buyer') {
       userService.role = 'buyer';
       context.go('/buyer-onboarding/welcome');
@@ -146,7 +148,7 @@ class _SignupPageState extends State<SignupPage> {
 
   String? _validateInstitutionName(String? v) {
     if (_userType == 'institution') {
-      if (v == null || v.isEmpty) return 'Organisation name is required';
+      if (v == null || v.isEmpty) return 'Business name is required';
     }
     return null;
   }
@@ -176,13 +178,14 @@ class _SignupPageState extends State<SignupPage> {
         return 'Use your official student email (.ac.za or .edu.za)';
       }
     } else if (_userType == 'institution') {
-      final re = _organisationType == 'accommodation'
-          ? RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
-          : RegExp(r'^[^@]+@[^@]+\.(ac\.za|edu\.za)$', caseSensitive: false);
+      final isAcademic = _organisationType == 'university';
+      final re = isAcademic
+          ? RegExp(r'^[^@]+@[^@]+\.(ac\.za|edu\.za)$', caseSensitive: false)
+          : RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
       if (!re.hasMatch(v)) {
-        return _organisationType == 'accommodation'
-            ? 'Enter a valid organisation email address'
-            : 'Use your institution email ending in .ac.za or .edu.za';
+        return isAcademic
+            ? 'Use your institution email ending in .ac.za or .edu.za'
+            : 'Enter a valid business email address';
       }
     } else {
       final re = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
@@ -322,7 +325,7 @@ class _RoleSelectionPage extends StatelessWidget {
                       const SizedBox(width: 14),
                       Expanded(
                         child: _RoleCard(
-                          title: 'Sign up as\nan Institution',
+                          title: 'Sign up as\na Business',
                           subtitle:
                               'Post jobs, find talent,\nmanage applications',
                           selected: selectedUserType == 'institution',
@@ -370,7 +373,7 @@ class _RoleSelectionPage extends StatelessWidget {
                           Text(
                             selectedUserType.isEmpty
                                 ? 'Select a role to continue'
-                                : 'Continue as ${selectedUserType == 'student' ? 'Student' : selectedUserType == 'institution' ? 'Institution' : 'Buyer'}',
+                                : 'Continue as ${selectedUserType == 'student' ? 'Student' : selectedUserType == 'institution' ? 'Business' : 'Buyer'}',
                             style: const TextStyle(
                                 fontSize: 15, fontWeight: FontWeight.w700),
                           ),
@@ -592,8 +595,8 @@ class _RolePreview extends StatelessWidget {
         ),
       'institution' => const _PreviewData(
           icon: Icons.hub_rounded,
-          title: 'Institution mode connects talent.',
-          subtitle: 'Post jobs, manage applicants and send alerts.',
+          title: 'Business mode connects talent.',
+          subtitle: 'Post opportunities, manage applicants and grow your reach.',
           color: Color(0xFF2563EB),
           color2: Color(0xFF38BDF8),
         ),
@@ -699,14 +702,36 @@ class _FormPage extends StatelessWidget {
     final isStudent = userType == 'student';
     final isInstitution = userType == 'institution';
     final domain = getDomain();
+    final businessEmailHint = switch (organisationType) {
+      'university' => 'institution@domain.ac.za',
+      'accommodation' => 'manager@provider.co.za',
+      'psha' => 'admin@psha.org.za',
+      _ => 'contact@business.co.za',
+    };
+    final businessNameLabel = switch (organisationType) {
+      'university' => 'Institution Name *',
+      'accommodation' => 'Accommodation Provider Name *',
+      'psha' => 'Association Name *',
+      _ => 'Business Name *',
+    };
+    final businessNameHint = switch (organisationType) {
+      'university' => 'e.g. University of Cape Town',
+      'accommodation' => 'e.g. Urban Student Living',
+      'psha' => 'e.g. Private Student Housing Association',
+      _ => 'e.g. Gude Business Solutions',
+    };
+    final businessNameIcon = switch (organisationType) {
+      'university' => Icons.account_balance_outlined,
+      'accommodation' => Icons.apartment_outlined,
+      'psha' => Icons.hub_outlined,
+      _ => Icons.business_center_outlined,
+    };
     final emailHint = isStudent
         ? (domain != null && domain.isNotEmpty
             ? 'studentnumber@$domain'
             : 'studentnumber@university.ac.za')
         : isInstitution
-            ? organisationType == 'accommodation'
-                ? 'manager@provider.co.za'
-                : 'institution@domain.ac.za'
+            ? businessEmailHint
             : 'your@email.com';
 
     return SingleChildScrollView(
@@ -717,9 +742,14 @@ class _FormPage extends StatelessWidget {
             subtitle: isStudent
                 ? 'Create your student account to get started.'
                 : isInstitution
-                    ? organisationType == 'accommodation'
-                        ? 'Create your provider account to support residents.'
-                        : 'Create your institution account to post jobs.'
+                    ? switch (organisationType) {
+                        'accommodation' =>
+                          'Create your provider account to support residents.',
+                        'psha' =>
+                          'Create your PSHA account to manage member providers.',
+                        _ =>
+                          'Create your business account to connect with talent.',
+                      }
                     : 'Create your buyer account to get started.',
             illustration: isStudent
                 ? '🎓'
@@ -761,7 +791,7 @@ class _FormPage extends StatelessWidget {
                   _inputField(
                     controller: name,
                     hint: isInstitution
-                        ? 'Enter institution contact name'
+                        ? 'Enter business contact name'
                         : 'Enter full name',
                     icon: Icons.person_outline,
                     validator: validateName,
@@ -769,41 +799,19 @@ class _FormPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 14),
 
-                  // Institution-specific fields
+                  // Business-specific fields
                   if (isInstitution) ...[
-                    _label('Organisation type'),
-                    const SizedBox(height: 7),
-                    SegmentedButton<String>(
-                      segments: const [
-                        ButtonSegment(
-                          value: 'university',
-                          icon: Icon(Icons.account_balance_outlined),
-                          label: Text('University'),
-                        ),
-                        ButtonSegment(
-                          value: 'accommodation',
-                          icon: Icon(Icons.apartment_outlined),
-                          label: Text('Accommodation'),
-                        ),
-                      ],
-                      selected: {organisationType},
-                      onSelectionChanged: (values) =>
-                          onOrganisationTypeChanged(values.first),
-                      showSelectedIcon: false,
+                    _SignupBusinessTypeSelector(
+                      selected: organisationType,
+                      onChanged: onOrganisationTypeChanged,
                     ),
                     const SizedBox(height: 14),
-                    _label(organisationType == 'accommodation'
-                        ? 'Accommodation Provider Name *'
-                        : 'Institution Name *'),
+                    _label(businessNameLabel),
                     const SizedBox(height: 6),
                     _inputField(
                       controller: institutionName,
-                      hint: organisationType == 'accommodation'
-                          ? 'e.g. Urban Student Living'
-                          : 'e.g. University of Cape Town',
-                      icon: organisationType == 'accommodation'
-                          ? Icons.apartment_outlined
-                          : Icons.business_outlined,
+                      hint: businessNameHint,
+                      icon: businessNameIcon,
                       validator: validateInstitutionName,
                       capitalization: TextCapitalization.words,
                     ),
@@ -954,9 +962,12 @@ class _FormPage extends StatelessWidget {
                         isStudent
                             ? 'Create Student Account'
                             : isInstitution
-                                ? organisationType == 'accommodation'
-                                    ? 'Create Provider Account'
-                                    : 'Create Institution Account'
+                                ? switch (organisationType) {
+                                    'accommodation' =>
+                                      'Create Provider Account',
+                                    'psha' => 'Create PSHA Admin Account',
+                                    _ => 'Create Business Account',
+                                  }
                                 : 'Create Buyer Account',
                         style: const TextStyle(
                             fontSize: 15, fontWeight: FontWeight.w700),
@@ -1093,6 +1104,143 @@ class _FormPage extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────
 // SHARED: SIGNUP HERO SECTION
 // ─────────────────────────────────────────────────────────────
+class _SignupBusinessTypeSelector extends StatelessWidget {
+  final String selected;
+  final ValueChanged<String> onChanged;
+
+  const _SignupBusinessTypeSelector({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Business type',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: _C.grey,
+          ),
+        ),
+        const SizedBox(height: 7),
+        DropdownButtonFormField<String>(
+          initialValue: selected,
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: _C.inputBg,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _C.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _C.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _C.focusBorder, width: 1.5),
+            ),
+          ),
+          items: const [
+            DropdownMenuItem(
+              value: 'university',
+              child: _SignupBusinessTypeOption(
+                icon: Icons.account_balance_outlined,
+                label: 'University or college',
+              ),
+            ),
+            DropdownMenuItem(
+              value: 'accommodation',
+              child: _SignupBusinessTypeOption(
+                icon: Icons.apartment_outlined,
+                label: 'Student accommodation',
+              ),
+            ),
+            DropdownMenuItem(
+              value: 'psha',
+              child: _SignupBusinessTypeOption(
+                icon: Icons.hub_outlined,
+                label: 'PSHA / housing association',
+              ),
+            ),
+            DropdownMenuItem(
+              value: 'company',
+              child: _SignupBusinessTypeOption(
+                icon: Icons.business_center_outlined,
+                label: 'Private company',
+              ),
+            ),
+            DropdownMenuItem(
+              value: 'bank',
+              child: _SignupBusinessTypeOption(
+                icon: Icons.account_balance_wallet_outlined,
+                label: 'Bank / financial services',
+              ),
+            ),
+            DropdownMenuItem(
+              value: 'ngo',
+              child: _SignupBusinessTypeOption(
+                icon: Icons.volunteer_activism_outlined,
+                label: 'NGO / nonprofit',
+              ),
+            ),
+            DropdownMenuItem(
+              value: 'public-sector',
+              child: _SignupBusinessTypeOption(
+                icon: Icons.account_balance_outlined,
+                label: 'Government / public sector',
+              ),
+            ),
+          ],
+          onChanged: (value) {
+            if (value != null) onChanged(value);
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _SignupBusinessTypeOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _SignupBusinessTypeOption({
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 19, color: _C.primary),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: _C.dark,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _SignupHero extends StatelessWidget {
   final String title, subtitle, illustration;
   final bool showBack;
@@ -1267,7 +1415,7 @@ class _RoleCard extends StatelessWidget {
   });
 
   _RoleStyle get _style {
-    if (title.contains('Institution')) {
+    if (title.contains('Business')) {
       return const _RoleStyle(
         icon: Icons.account_balance_rounded,
         accent: Color(0xFF2563EB),

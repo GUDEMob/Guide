@@ -441,7 +441,7 @@ class _StabilityPageState extends State<StabilityPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF7F8),
+      backgroundColor: const Color(0xFFFAFBFE),
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -471,14 +471,15 @@ class _StabilityPageState extends State<StabilityPage>
       body: CustomScrollView(slivers: [
         SliverAppBar(
           pinned: true,
-          backgroundColor: _C.primary,
+          backgroundColor: Colors.white,
+          foregroundColor: _C.dark,
           elevation: 0,
           title: const Text('Support Hub',
               style: TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20)),
+                  color: _C.dark, fontWeight: FontWeight.w800, fontSize: 20)),
           actions: [
             IconButton(
-                icon: const Icon(Icons.info_outline, color: Colors.white),
+                icon: const Icon(Icons.info_outline, color: Color(0xFF0866E9)),
                 onPressed: _showScoreExplanationDialog)
           ],
         ),
@@ -494,26 +495,63 @@ class _StabilityPageState extends State<StabilityPage>
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFE30613), Color(0xFF7C4DFF)],
+                      colors: [Color(0xFF0866E9), Color(0xFF0743A8)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: const Color(0xFFD5E6FF)),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x0D0866E9),
+                        blurRadius: 18,
+                        offset: Offset(0, 6),
+                      )
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.favorite_rounded,
-                          color: Colors.white, size: 26),
+                      Row(children: [
+                        Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(18)),
+                            child: const Icon(Icons.volunteer_activism_rounded,
+                                color: _C.primary, size: 32)),
+                        const Spacer(),
+                        const Icon(Icons.auto_awesome_rounded,
+                            color: Color(0xFFFFD166), size: 34),
+                      ]),
                       const SizedBox(height: 12),
                       const Text('You are not alone',
                           style: TextStyle(
-                              fontSize: 20,
+                              fontSize: 25,
                               fontWeight: FontWeight.w800,
                               color: Colors.white)),
                       const SizedBox(height: 4),
-                      const Text('Practical support for money, food, studies and wellbeing.',
-                          style: TextStyle(fontSize: 12, color: Colors.white70)),
+                      const Text(
+                          'Practical support for money, food, studies and wellbeing.',
+                          style: TextStyle(
+                              fontSize: 12,
+                              height: 1.5,
+                              color: Colors.white70)),
+                      const SizedBox(height: 14),
+                      Wrap(spacing: 8, runSpacing: 8, children: [
+                        for (final label in ['Money', 'Study', 'Wellbeing'])
+                          Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.14),
+                                  borderRadius: BorderRadius.circular(20)),
+                              child: Text(label,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700))),
+                      ]),
                     ],
                   ),
                 ),
@@ -1830,11 +1868,14 @@ class _SupportCard extends StatelessWidget {
   Widget build(BuildContext context) => GestureDetector(
         onTap: onTap,
         child: Container(
-          height: 95,
+          height: 118,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: item.color.withOpacity(0.09),
-            borderRadius: BorderRadius.circular(14),
+            gradient: LinearGradient(colors: [
+              item.color.withOpacity(0.16),
+              item.color.withOpacity(0.04)
+            ], begin: Alignment.topLeft, end: Alignment.bottomRight),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(color: item.color.withOpacity(0.22)),
             boxShadow: [
               BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)
@@ -1843,22 +1884,35 @@ class _SupportCard extends StatelessWidget {
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Container(
-              width: 32,
-              height: 32,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: item.color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(9),
+                gradient: LinearGradient(
+                    colors: [item.color, item.color.withOpacity(0.75)]),
+                borderRadius: BorderRadius.circular(13),
+                boxShadow: [
+                  BoxShadow(
+                      color: item.color.withOpacity(0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3))
+                ],
               ),
-              child: Icon(item.icon, size: 16, color: item.color),
+              child: Icon(item.icon, size: 23, color: Colors.white),
             ),
             const Spacer(),
-            Text(item.title,
-                style: const TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w700, color: _C.dark)),
+            Row(children: [
+              Expanded(
+                  child: Text(item.title,
+                      style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: _C.dark))),
+              Icon(Icons.arrow_outward_rounded, size: 15, color: item.color)
+            ]),
             const SizedBox(height: 2),
             Text(item.description,
                 style: const TextStyle(
-                    fontSize: 10, color: Color(0xFF999999), height: 1.3),
+                    fontSize: 10, color: Color(0xFF596474), height: 1.3),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis),
           ]),

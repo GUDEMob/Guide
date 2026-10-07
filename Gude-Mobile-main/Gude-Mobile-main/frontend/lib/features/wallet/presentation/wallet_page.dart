@@ -7,7 +7,7 @@ import 'package:gude_app/services/wallet_service.dart';
 
 // ── Colours ─────────────────────────────────────────────────
 class _C {
-  static const primary = Color(0xFFE30613);
+  static const primary = Color(0xFF202126);
   static const dark = Color(0xFF1A1A1A);
   static const grey = Color(0xFF888888);
   static const lightGrey = Color(0xFFF5F5F5);
@@ -282,8 +282,8 @@ class _WalletPageState extends State<WalletPage> {
               onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Cancel')),
           FilledButton(
-            onPressed: () => Navigator.pop(
-                dialogContext, double.tryParse(controller.text)),
+            onPressed: () =>
+                Navigator.pop(dialogContext, double.tryParse(controller.text)),
             child: const Text('Update plan'),
           ),
         ],
@@ -469,7 +469,7 @@ class _WalletPageState extends State<WalletPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF7F8),
+      backgroundColor: const Color(0xFFF4F4F6),
       body: CustomScrollView(slivers: [
         SliverAppBar(
           pinned: true,
@@ -477,10 +477,13 @@ class _WalletPageState extends State<WalletPage> {
           elevation: 0,
           title: const Text('My Wallet',
               style: TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20)),
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 20)),
           actions: [
             IconButton(
-                icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                icon: const Icon(Icons.notifications_outlined,
+                    color: Colors.white),
                 onPressed: () => context.push('/notifications')),
             IconButton(
                 icon: const Icon(Icons.add_circle_outline, color: Colors.white),
@@ -584,22 +587,25 @@ class _PocketContent extends StatelessWidget {
             CircleAvatar(
               radius: 24,
               backgroundColor: pocket.cardColor.withOpacity(0.12),
-              child: Text(pocket.emoji,
-                  style: const TextStyle(fontSize: 21)),
+              child: Text(pocket.emoji, style: const TextStyle(fontSize: 21)),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(pocket.name,
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.w900)),
-                const Text('Pocket details and controls',
-                    style: TextStyle(color: _C.grey, fontSize: 11)),
-              ]),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(pocket.name,
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.w900)),
+                    const Text('Pocket details and controls',
+                        style: TextStyle(color: _C.grey, fontSize: 11)),
+                  ]),
             ),
             Text('R${pocket.balance.toStringAsFixed(2)}',
                 style: const TextStyle(
-                    color: _C.primary, fontSize: 18, fontWeight: FontWeight.w900)),
+                    color: _C.primary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900)),
           ]),
           const SizedBox(height: 14),
           Container(
@@ -610,12 +616,15 @@ class _PocketContent extends StatelessWidget {
               const Icon(Icons.fingerprint_rounded, color: _C.grey, size: 19),
               const SizedBox(width: 8),
               Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('Unique pocket identifier',
-                      style: TextStyle(color: _C.grey, fontSize: 10)),
-                  Text(pocket.cardNumber,
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Unique pocket identifier',
+                          style: TextStyle(color: _C.grey, fontSize: 10)),
+                      Text(pocket.cardNumber,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 12)),
+                    ]),
               ),
               IconButton(
                 tooltip: 'Copy identifier',
@@ -720,8 +729,8 @@ class _PocketContent extends StatelessWidget {
               child: PageView.builder(
                 controller: pageController,
                 onPageChanged: onPageChanged,
-                physics: const PageScrollPhysics(
-                    parent: BouncingScrollPhysics()),
+                physics:
+                    const PageScrollPhysics(parent: BouncingScrollPhysics()),
                 dragStartBehavior: DragStartBehavior.start,
                 itemCount: pockets.length,
                 itemBuilder: (context, index) => Padding(
@@ -898,7 +907,8 @@ class _PocketContent extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Set up your first budget',
-                              style: TextStyle(fontWeight: FontWeight.w700, color: _C.dark)),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w700, color: _C.dark)),
                           SizedBox(height: 2),
                           Text('See where your money goes each month',
                               style: TextStyle(color: _C.grey, fontSize: 11)),
@@ -1017,10 +1027,23 @@ class _SheetAction extends StatelessWidget {
             border: Border.all(color: color.withOpacity(0.18)),
           ),
           child: Column(children: [
-            Icon(icon, color: color, size: 21),
+            Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                        colors: [color, color.withOpacity(0.75)]),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                          color: color.withOpacity(0.20),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3))
+                    ]),
+                child: Icon(icon, color: Colors.white, size: 21)),
             const SizedBox(height: 5),
             Text(label,
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                style:
+                    const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
           ]),
         ),
       );
@@ -1044,9 +1067,13 @@ class _WalletOverview extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFFFDDE0)),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF303238), Color(0xFF111216)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFF41434A)),
         boxShadow: [
           BoxShadow(color: _C.primary.withOpacity(0.06), blurRadius: 16)
         ],
@@ -1055,16 +1082,20 @@ class _WalletOverview extends StatelessWidget {
         const Row(children: [
           CircleAvatar(
             radius: 18,
-            backgroundColor: Color(0xFFFFECEE),
-            child: Icon(Icons.wallet_rounded, color: _C.primary, size: 19),
+            backgroundColor: Color(0xFF41434A),
+            child: Icon(Icons.wallet_rounded, color: Colors.white, size: 19),
           ),
           SizedBox(width: 10),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('Your money, organised',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16)),
               Text('Swipe pocket cards below to manage each purpose',
-                  style: TextStyle(color: _C.grey, fontSize: 11)),
+                  style: TextStyle(color: Colors.white70, fontSize: 11)),
             ]),
           ),
         ]),
@@ -1073,7 +1104,7 @@ class _WalletOverview extends StatelessWidget {
           Expanded(
             child: _OverviewTile(
               icon: Icons.storefront_rounded,
-              color: _C.primary,
+              color: const Color(0xFF89B9FF),
               label: 'Gude earnings',
               value: 'R${earnings.toStringAsFixed(2)}',
             ),
@@ -1103,18 +1134,21 @@ class _WalletOverview extends StatelessWidget {
                   color: Color(0xFF7C3AED), size: 21),
               const SizedBox(width: 10),
               const Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Planning Wallet',
-                      style: TextStyle(fontWeight: FontWeight.w800)),
-                  Text('Simulation only - never changes spendable money',
-                      style: TextStyle(color: _C.grey, fontSize: 10)),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Planning Wallet',
+                          style: TextStyle(fontWeight: FontWeight.w800)),
+                      Text('Simulation only - never changes spendable money',
+                          style: TextStyle(color: _C.grey, fontSize: 10)),
+                    ]),
               ),
               Text('R${planningBalance.toStringAsFixed(0)}',
                   style: const TextStyle(
                       color: Color(0xFF7C3AED), fontWeight: FontWeight.w900)),
               const SizedBox(width: 4),
-              const Icon(Icons.edit_outlined, color: Color(0xFF7C3AED), size: 16),
+              const Icon(Icons.edit_outlined,
+                  color: Color(0xFF7C3AED), size: 16),
             ]),
           ),
         ),
@@ -1145,11 +1179,16 @@ class _OverviewTile extends StatelessWidget {
           Icon(icon, color: color, size: 19),
           const SizedBox(width: 8),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(label, style: const TextStyle(color: _C.grey, fontSize: 10)),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(label,
+                  style: const TextStyle(color: Colors.white70, fontSize: 10)),
               Text(value,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14)),
             ]),
           ),
         ]),
@@ -1166,9 +1205,8 @@ class _PocketCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final startColor = pocket.isMainAccount ? _C.primary : pocket.cardColor;
-    final endColor = pocket.isMainAccount
-        ? const Color(0xFF8F0010)
-        : pocket.cardColorEnd;
+    final endColor =
+        pocket.isMainAccount ? const Color(0xFF08090C) : pocket.cardColorEnd;
     return Container(
       height: double.infinity,
       decoration: BoxDecoration(
@@ -1270,16 +1308,16 @@ class _PocketCard extends StatelessWidget {
                 child: CustomPaint(painter: _ChipPainter())),
             const Spacer(),
             Padding(
-                  padding: const EdgeInsets.only(bottom: 3),
-                  child: Text(
-                      balVisible
-                          ? 'R ${pocket.balance.toStringAsFixed(2)}'
-                          : 'R •••••',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5))),
+                padding: const EdgeInsets.only(bottom: 3),
+                child: Text(
+                    balVisible
+                        ? 'R ${pocket.balance.toStringAsFixed(2)}'
+                        : 'R •••••',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5))),
             Text(pocket.cardNumber,
                 style: const TextStyle(
                     color: Colors.white,

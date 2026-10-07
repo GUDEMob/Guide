@@ -13,7 +13,15 @@ class AccommodationOpportunitiesPage extends StatefulWidget {
 class _AccommodationOpportunitiesPageState
     extends State<AccommodationOpportunitiesPage> {
   final store = AccommodationPortalStore.instance;
+  final _searchController = TextEditingController();
   bool showOpenOnly = true;
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,14 +39,24 @@ class _AccommodationOpportunitiesPageState
         child: AnimatedBuilder(
           animation: store,
           builder: (context, _) {
-            final visible = showOpenOnly
-                ? store.opportunities.where((item) => item.isOpen).toList()
-                : store.opportunities;
+            final query = _query.trim().toLowerCase();
+            final visible = store.opportunities.where((item) {
+              final matchesStatus = !showOpenOnly || item.isOpen;
+              final matchesQuery = query.isEmpty ||
+                  item.title.toLowerCase().contains(query) ||
+                  item.residence.toLowerCase().contains(query) ||
+                  item.schedule.toLowerCase().contains(query);
+              return matchesStatus && matchesQuery;
+            }).toList();
+            final totalViews = store.opportunities.fold<int>(
+              0,
+              (total, item) => total + item.views,
+            );
             return CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -47,24 +65,42 @@ class _AccommodationOpportunitiesPageState
                           title: 'Opportunities',
                           subtitle:
                               'Create legitimate residence work and track student interest.',
+                          icon: Icons.work_rounded,
+                          accent: AccommodationColors.orange,
+                          secondary: AccommodationColors.amber,
+                          backRoute: '/accommodation/overview',
                         ),
-                        const SizedBox(height: 18),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _SummaryTile(
-                                value: '${store.openOpportunityCount}',
-                                label: 'Open roles',
-                                color: AccommodationColors.orange,
-                              ),
+                        const SizedBox(height: 14),
+                        PortalSearchBar(
+                          controller: _searchController,
+                          hint: 'Search roles, residences or schedules',
+                          accent: AccommodationColors.orange,
+                          onChanged: (value) => setState(() => _query = value),
+                        ),
+                        const SizedBox(height: 14),
+                        PortalSummaryBand(
+                          colors: const [
+                            AccommodationColors.orange,
+                            AccommodationColors.amber,
+                          ],
+                          items: [
+                            PortalSummaryItem(
+                              value: '${store.openOpportunityCount}',
+                              label: 'Open roles',
+                              icon: Icons.work_rounded,
+                              onTap: () => setState(() => showOpenOnly = true),
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _SummaryTile(
-                                value: '${store.totalApplicants}',
-                                label: 'Applicants',
-                                color: AccommodationColors.blue,
-                              ),
+                            PortalSummaryItem(
+                              value: '${store.totalApplicants}',
+                              label: 'Applicants',
+                              icon: Icons.groups_2_rounded,
+                              onTap: () => setState(() => showOpenOnly = false),
+                            ),
+                            PortalSummaryItem(
+                              value: '$totalViews',
+                              label: 'Views',
+                              icon: Icons.visibility_rounded,
+                              onTap: () => setState(() => showOpenOnly = false),
                             ),
                           ],
                         ),
@@ -89,25 +125,32 @@ class _AccommodationOpportunitiesPageState
                     ),
                   ),
                 ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _OpportunityCard(
-                          opportunity: visible[index],
-                          onApplicants: () => _showApplicants(visible[index]),
-                          onStatusChanged: (value) => store.setOpportunityOpen(
-                            visible[index].id,
-                            value,
+                if (visible.isEmpty)
+                  const SliverPadding(
+                    padding: EdgeInsets.fromLTRB(16, 0, 16, 96),
+                    sliver: SliverToBoxAdapter(child: _EmptyOpportunityState()),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _OpportunityCard(
+                            opportunity: visible[index],
+                            onApplicants: () => _showApplicants(visible[index]),
+                            onStatusChanged: (value) =>
+                                store.setOpportunityOpen(
+                              visible[index].id,
+                              value,
+                            ),
                           ),
                         ),
+                        childCount: visible.length,
                       ),
-                      childCount: visible.length,
                     ),
                   ),
-                ),
               ],
             );
           },
@@ -141,45 +184,29 @@ class _AccommodationOpportunitiesPageState
   }
 }
 
-class _SummaryTile extends StatelessWidget {
-  final String value;
-  final String label;
-  final Color color;
-
-  const _SummaryTile({
-    required this.value,
-    required this.label,
-    required this.color,
-  });
+class _EmptyOpportunityState extends StatelessWidget {
+  const _EmptyOpportunityState();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 28),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.18)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AccommodationColors.line),
       ),
-      child: Row(
+      child: const Column(
         children: [
+          Icon(Icons.search_off_rounded, color: AccommodationColors.muted),
+          SizedBox(height: 7),
           Text(
-            value,
+            'No opportunities match these filters.',
+            textAlign: TextAlign.center,
             style: TextStyle(
-              color: color,
-              fontSize: 23,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: AccommodationColors.muted,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-              ),
+              color: AccommodationColors.muted,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -205,7 +232,7 @@ class _OpportunityCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AccommodationColors.line),
       ),
       child: Column(
@@ -413,7 +440,7 @@ class _CreateOpportunitySheetState extends State<_CreateOpportunitySheet> {
                   foregroundColor: Colors.white,
                   minimumSize: const Size.fromHeight(50),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
               ),
