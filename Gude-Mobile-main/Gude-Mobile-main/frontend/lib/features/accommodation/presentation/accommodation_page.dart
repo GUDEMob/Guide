@@ -96,6 +96,13 @@ class _AccommodationPageState extends State<AccommodationPage> {
   int? _maxRent;
   Set<String> _saved = {};
   List<_Review> _reviews = [];
+  String _currentName = '';
+  String _currentArea = '';
+  String _currentRent = '';
+  DateTime? _leaseEnd;
+  DateTime? _moveDate;
+  String? _targetId;
+  Set<String> _moveChecks = {};
 
   @override
   void initState() {
@@ -128,6 +135,16 @@ class _AccommodationPageState extends State<AccommodationPage> {
       _saved = (prefs.getStringList('accommodation_saved_v1') ?? []).toSet();
       _reviews = reviews;
       _school.text = prefs.getString('accommodation_school_v1') ?? _school.text;
+      _currentName = prefs.getString('accommodation_current_name_v1') ?? '';
+      _currentArea = prefs.getString('accommodation_current_area_v1') ?? '';
+      _currentRent = prefs.getString('accommodation_current_rent_v1') ?? '';
+      _leaseEnd = DateTime.tryParse(
+          prefs.getString('accommodation_lease_end_v1') ?? '');
+      _moveDate = DateTime.tryParse(
+          prefs.getString('accommodation_move_date_v1') ?? '');
+      _targetId = prefs.getString('accommodation_target_v1');
+      _moveChecks =
+          (prefs.getStringList('accommodation_move_checks_v1') ?? []).toSet();
     });
   }
 
@@ -206,6 +223,10 @@ class _AccommodationPageState extends State<AccommodationPage> {
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   _campusCard(),
+                  const SizedBox(height: 14),
+                  _currentHomeCard(),
+                  const SizedBox(height: 14),
+                  _movingCard(),
                   const SizedBox(height: 18),
                   TextField(
                     controller: _search,
@@ -368,6 +389,265 @@ class _AccommodationPageState extends State<AccommodationPage> {
           ),
         ]),
       );
+
+  String _dateLabel(DateTime? date) =>
+      date == null ? 'Not set' : '${date.day}/${date.month}/${date.year}';
+
+  Widget _currentHomeCard() => Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: _ink,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Row(children: [
+            Icon(Icons.home_rounded, color: Color(0xFF8DE2CE)),
+            SizedBox(width: 8),
+            Text('MY CURRENT HOME',
+                style: TextStyle(
+                    color: Color(0xFF8DE2CE),
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                    fontSize: 11)),
+          ]),
+          const SizedBox(height: 12),
+          Text(
+              _currentName.isEmpty
+                  ? 'Where are you staying now?'
+                  : _currentName,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800)),
+          const SizedBox(height: 4),
+          Text(
+              _currentName.isEmpty
+                  ? 'Add your place to keep its details handy when you move.'
+                  : _currentArea,
+              style: const TextStyle(color: Color(0xFFC9D5D2), fontSize: 12)),
+          if (_currentName.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              _Tag(
+                  'Rent: ${_currentRent.isEmpty ? 'Not set' : 'R$_currentRent / mo'}',
+                  Colors.white,
+                  const Color(0xFF32413F)),
+              _Tag('Lease ends: ${_dateLabel(_leaseEnd)}', Colors.white,
+                  const Color(0xFF32413F)),
+            ]),
+          ],
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            onPressed: _editCurrentHome,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white,
+              side: const BorderSide(color: Color(0xFF8DE2CE)),
+            ),
+            icon: Icon(_currentName.isEmpty
+                ? Icons.add_home_rounded
+                : Icons.edit_rounded),
+            label: Text(_currentName.isEmpty
+                ? 'Add current home'
+                : 'View / edit profile'),
+          ),
+        ]),
+      );
+
+  Widget _movingCard() {
+    final target = _stays.where((stay) => stay.id == _targetId).firstOrNull;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+          color: const Color(0xFFFFEFEC),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFFFCFC8))),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Row(children: [
+          Icon(Icons.move_up_rounded, color: _red),
+          SizedBox(width: 8),
+          Text('Planning a move?',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+        ]),
+        const SizedBox(height: 5),
+        Text(
+            _moveDate == null
+                ? 'Moving after semester? Plan early and keep both places organised.'
+                : 'Target move: ${_dateLabel(_moveDate)}${target == null ? '' : '  •  Considering ${target.title}'}',
+            style: const TextStyle(fontSize: 12, height: 1.35)),
+        const SizedBox(height: 10),
+        FilledButton.icon(
+          onPressed: _movePlanner,
+          style: FilledButton.styleFrom(backgroundColor: _red),
+          icon: const Icon(Icons.arrow_forward_rounded),
+          label: Text(_moveDate == null ? 'Plan my move' : 'Open moving plan'),
+        ),
+      ]),
+    );
+  }
+
+  Future<void> _editCurrentHome() async {
+    final result = await showModalBottomSheet<_CurrentHomeData>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => _CurrentHomeForm(
+        name: _currentName,
+        area: _currentArea,
+        rent: _currentRent,
+        leaseEnd: _leaseEnd,
+      ),
+    );
+    if (result != null && mounted) {
+      setState(() {
+        _currentName = result.name;
+        _currentArea = result.area;
+        _currentRent = result.rent;
+        _leaseEnd = result.leaseEnd;
+      });
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('accommodation_current_name_v1', _currentName);
+      await prefs.setString('accommodation_current_area_v1', _currentArea);
+      await prefs.setString('accommodation_current_rent_v1', _currentRent);
+      if (_leaseEnd != null) {
+        await prefs.setString(
+            'accommodation_lease_end_v1', _leaseEnd!.toIso8601String());
+      }
+    }
+  }
+
+  Future<void> _movePlanner() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: _canvas,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, refresh) {
+          final target =
+              _stays.where((stay) => stay.id == _targetId).firstOrNull;
+          const steps = <(String, String)>[
+            ('notice', 'Check your lease and notice period'),
+            ('budget', 'Compare rent, deposit and transport costs'),
+            ('viewing', 'Visit and verify your next place'),
+            ('contract', 'Read the new lease before paying'),
+            ('deposit', 'Arrange deposit return and handover'),
+            ('utilities', 'Plan keys, utilities and moving day'),
+          ];
+          return FractionallySizedBox(
+            heightFactor: 0.88,
+            child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+                children: [
+                  const Text('My moving plan',
+                      style:
+                          TextStyle(fontSize: 23, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 5),
+                  const Text(
+                      'A simple bridge from your current place to your next one.',
+                      style: TextStyle(color: Colors.black54)),
+                  const SizedBox(height: 18),
+                  Container(
+                    padding: const EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16)),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                              'FROM  ${_currentName.isEmpty ? 'Add your current home' : _currentName}',
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w800)),
+                          const SizedBox(height: 5),
+                          Text('Lease ends: ${_dateLabel(_leaseEnd)}',
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.black54)),
+                          const Divider(height: 24),
+                          Text(
+                              'TO  ${target?.title ?? 'Choose a place to consider'}',
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w800)),
+                          if (target != null) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                                'Demo option • R${target.rent}/month • Not booked',
+                                style:
+                                    const TextStyle(fontSize: 12, color: _red)),
+                          ],
+                        ]),
+                  ),
+                  const SizedBox(height: 14),
+                  ListTile(
+                    tileColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15)),
+                    leading:
+                        const Icon(Icons.event_available_rounded, color: _teal),
+                    title: const Text('Target move date'),
+                    subtitle: Text(_dateLabel(_moveDate)),
+                    trailing: const Icon(Icons.edit_calendar_rounded),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: sheetContext,
+                        initialDate: _moveDate ?? DateTime.now(),
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked == null) return;
+                      setState(() => _moveDate = picked);
+                      refresh(() {});
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setString('accommodation_move_date_v1',
+                          picked.toIso8601String());
+                    },
+                  ),
+                  if (_moveDate != null &&
+                      _leaseEnd != null &&
+                      _moveDate!.isBefore(_leaseEnd!)) ...[
+                    const SizedBox(height: 8),
+                    const Text(
+                        'Your target date is before your lease ends. Check notice and overlapping rent.',
+                        style: TextStyle(color: _red, fontSize: 12)),
+                  ],
+                  const SizedBox(height: 20),
+                  const Text('Moving checklist',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 7),
+                  for (final step in steps)
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title:
+                          Text(step.$2, style: const TextStyle(fontSize: 13)),
+                      value: _moveChecks.contains(step.$1),
+                      activeColor: _teal,
+                      onChanged: (checked) async {
+                        setState(() => checked == true
+                            ? _moveChecks.add(step.$1)
+                            : _moveChecks.remove(step.$1));
+                        refresh(() {});
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.setStringList(
+                            'accommodation_move_checks_v1',
+                            _moveChecks.toList());
+                      },
+                    ),
+                  const SizedBox(height: 10),
+                  const Text(
+                      'A shortlisted place is only a plan, not a reservation. Confirm availability directly before giving notice on your current home.',
+                      style: TextStyle(fontSize: 12, color: Colors.black54)),
+                ]),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _considerStay(_Stay stay) async {
+    setState(() => _targetId = stay.id);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('accommodation_target_v1', stay.id);
+  }
 
   Widget _stayCard(_Stay stay) {
     final reviews =
@@ -578,6 +858,18 @@ class _AccommodationPageState extends State<AccommodationPage> {
                   const SizedBox(height: 8),
                   const Text(
                       'Ask about the deposit, utilities, transport to campus, safety and the written lease. Exact distance and availability are not verified.'),
+                  const SizedBox(height: 14),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      await _considerStay(stay);
+                      if (sheetContext.mounted) Navigator.pop(sheetContext);
+                      if (mounted) _movePlanner();
+                    },
+                    icon: const Icon(Icons.move_up_rounded),
+                    label: Text(_targetId == stay.id
+                        ? 'View in my moving plan'
+                        : 'Consider for my move'),
+                  ),
                   const SizedBox(height: 22),
                   Row(children: [
                     const Expanded(
@@ -741,6 +1033,128 @@ class _AccommodationPageState extends State<AccommodationPage> {
     );
     body.dispose();
   }
+}
+
+class _CurrentHomeData {
+  final String name, area, rent;
+  final DateTime? leaseEnd;
+  const _CurrentHomeData(this.name, this.area, this.rent, this.leaseEnd);
+}
+
+class _CurrentHomeForm extends StatefulWidget {
+  final String name, area, rent;
+  final DateTime? leaseEnd;
+  const _CurrentHomeForm(
+      {required this.name,
+      required this.area,
+      required this.rent,
+      required this.leaseEnd});
+
+  @override
+  State<_CurrentHomeForm> createState() => _CurrentHomeFormState();
+}
+
+class _CurrentHomeFormState extends State<_CurrentHomeForm> {
+  late final TextEditingController _name;
+  late final TextEditingController _area;
+  late final TextEditingController _rent;
+  DateTime? _leaseEnd;
+
+  @override
+  void initState() {
+    super.initState();
+    _name = TextEditingController(text: widget.name);
+    _area = TextEditingController(text: widget.area);
+    _rent = TextEditingController(text: widget.rent);
+    _leaseEnd = widget.leaseEnd;
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _area.dispose();
+    _rent.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsets.fromLTRB(
+            20, 0, 20, MediaQuery.viewInsetsOf(context).bottom + 20),
+        child: SingleChildScrollView(
+            child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('My accommodation profile',
+                style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 5),
+            const Text(
+                'Private to this device. Add the real place where you live.',
+                style: TextStyle(color: Colors.black54, fontSize: 12)),
+            const SizedBox(height: 16),
+            TextField(
+                controller: _name,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
+                    labelText: 'Residence or building name',
+                    border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            TextField(
+                controller: _area,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
+                    labelText: 'Area or address (optional)',
+                    border: OutlineInputBorder())),
+            const SizedBox(height: 12),
+            TextField(
+                controller: _rent,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                    labelText: 'Monthly rent in rand (optional)',
+                    prefixText: 'R ',
+                    border: OutlineInputBorder())),
+            const SizedBox(height: 8),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.event_rounded, color: _teal),
+              title: const Text('Lease end date'),
+              subtitle: Text(_leaseEnd == null
+                  ? 'Not set'
+                  : '${_leaseEnd!.day}/${_leaseEnd!.month}/${_leaseEnd!.year}'),
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _leaseEnd ?? DateTime.now(),
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null && mounted) {
+                  setState(() => _leaseEnd = picked);
+                }
+              },
+            ),
+            const SizedBox(height: 10),
+            FilledButton(
+              onPressed: () {
+                if (_name.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Add the name of your current place.')));
+                  return;
+                }
+                Navigator.pop(
+                    context,
+                    _CurrentHomeData(_name.text.trim(), _area.text.trim(),
+                        _rent.text.trim(), _leaseEnd));
+              },
+              style: FilledButton.styleFrom(
+                  backgroundColor: _teal,
+                  minimumSize: const Size(double.infinity, 48)),
+              child: const Text('Save my place'),
+            ),
+          ],
+        )),
+      );
 }
 
 class _Tag extends StatelessWidget {
