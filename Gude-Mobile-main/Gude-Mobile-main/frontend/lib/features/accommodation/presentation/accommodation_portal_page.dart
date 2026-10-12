@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:gude_app/features/accommodation/data/accommodation_demo_store.dart';
 import 'package:gude_app/services/user_role_service.dart';
 
@@ -55,6 +56,11 @@ class _AccommodationPortalPageState extends State<AccommodationPortalPage> {
           appBar: AppBar(
             backgroundColor: _ink,
             foregroundColor: Colors.white,
+            leading: IconButton(
+              tooltip: 'Back to Accommodation',
+              icon: const Icon(Icons.arrow_back_rounded),
+              onPressed: () => context.go('/accommodation'),
+            ),
             title: const Text('Student accommodation',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             actions: [
