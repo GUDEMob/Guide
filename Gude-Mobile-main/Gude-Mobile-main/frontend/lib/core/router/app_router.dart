@@ -46,6 +46,8 @@ import 'package:gude_app/features/stability/presentation/stability_page.dart';
 import 'package:gude_app/features/stability/presentation/weekly_checkin_page.dart';
 import 'package:gude_app/features/support_hub/presentation/support_page.dart';
 import 'package:gude_app/features/accommodation/presentation/accommodation_page.dart';
+import 'package:gude_app/features/accommodation/presentation/accommodation_portal_page.dart';
+import 'package:gude_app/features/accommodation/presentation/accommodation_manager_demo_page.dart';
 import 'package:gude_app/features/home/presentation/home_page.dart';
 import 'package:gude_app/features/profile/presentation/profile_page.dart';
 import 'package:gude_app/features/community/presentation/community_chat_page.dart';
@@ -185,6 +187,9 @@ class AppRouter {
 
       // ── Community Chat ─────────────────────────────────────────────
       GoRoute(path: '/community', builder: (c, s) => const ChatsChatPage()),
+      GoRoute(
+          path: '/accommodation/manager-demo',
+          builder: (c, s) => const AccommodationManagerDemoPage()),
 
       // ── Wallet sub-screens (outside shell) ─────────────────────────
       GoRoute(
@@ -233,6 +238,9 @@ class AppRouter {
           GoRoute(
               path: '/accommodation',
               builder: (c, s) => const AccommodationPage()),
+          GoRoute(
+              path: '/accommodation/portal',
+              builder: (c, s) => const AccommodationPortalPage()),
           GoRoute(path: '/profile', builder: (c, s) => const ProfilePage()),
         ],
       ),

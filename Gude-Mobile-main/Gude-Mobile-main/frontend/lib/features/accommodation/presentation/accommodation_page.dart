@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gude_app/services/user_role_service.dart';
 
@@ -222,6 +223,8 @@ class _AccommodationPageState extends State<AccommodationPage> {
               padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
+                  _portalCard(),
+                  const SizedBox(height: 14),
                   _campusCard(),
                   const SizedBox(height: 14),
                   _currentHomeCard(),
@@ -352,6 +355,29 @@ class _AccommodationPageState extends State<AccommodationPage> {
             const Icon(Icons.location_city_rounded, color: Color(0xFF8DE2CE)),
           ],
         ),
+      );
+
+  Widget _portalCard() => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+            color: const Color(0xFFE2F4EF),
+            borderRadius: BorderRadius.circular(18)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Your accommodation journey',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 5),
+          const Text(
+              'Explore, arrange a viewing, request a move and follow its progress.',
+              style: TextStyle(fontSize: 12)),
+          const SizedBox(height: 10),
+          FilledButton.icon(
+              onPressed: () => context.go('/accommodation/portal'),
+              icon: const Icon(Icons.arrow_forward_rounded),
+              label: const Text('Open student portal')),
+          TextButton(
+              onPressed: () => context.push('/accommodation/manager-demo'),
+              child: const Text('Open manager demo')),
+        ]),
       );
 
   Widget _campusCard() => Container(
